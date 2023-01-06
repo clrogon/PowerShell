@@ -23,7 +23,7 @@ Function Global:Show-BalloonTip
         # Info help. Should be one of the following options 'None','Info','Warning','Error'
         $Icon = 'Info',
         # Timeout help. Sets the time that the balloon appears in milliseconds.  The default in this script $10000 is ten seconds.
-        $Timeout = $10000
+        $Timeout = 10000
     )
 
     Process
