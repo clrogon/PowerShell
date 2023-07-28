@@ -1,4 +1,4 @@
-Reboot Reminder PowerShell Script
+# Reboot Reminder PowerShell Script
 Description
 RebootReminder.ps1 is a PowerShell script designed to remind users to reboot their system if it hasn't been rebooted within a specified number of days. The script sends a balloon notification to the user. If the system is not rebooted within a specified timeframe, the script will enforce a system reboot.
 
