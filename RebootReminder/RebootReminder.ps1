@@ -1,4 +1,3 @@
-Please review if tis correct
 <#
 .Synopsis
    A script to remind the user to reboot their system.
