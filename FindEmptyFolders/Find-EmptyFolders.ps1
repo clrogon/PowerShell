@@ -1,41 +1,30 @@
 <#
 .SYNOPSIS
 A PowerShell script that finds and logs empty directories.
-
 .DESCRIPTION
 This script recursively scans a directory for empty subdirectories. It logs the paths of empty directories and any errors encountered during the scan.
-
 .PARAMETER FolderPath
 The directory path to be scanned for empty directories. This parameter is mandatory and should be an existing directory.
-
 .PARAMETER LogFile
 The file path to which errors will be logged. Default is "C:\TSTFolder\Logs\EmptyFolders_log.log".
-
 .PARAMETER EmptyFoldersLog
 The file path to which empty directories will be logged. Default is "C:\TSTFolder\Logs\EmptyFolders_report.log".
-
 .PARAMETER LogLevel
 Controls the level of verbosity in logging. Accepted values: 'Error', 'Verbose'. Default: 'Error'.
-
 .EXAMPLE
 Find-EmptyFolders -FolderPath "C:\TestDirectory" -LogFile "C:\Logs\Errors.log" -EmptyFoldersLog "C:\Logs\Empty.log" -LogLevel "Verbose"
-
 .INPUTS
 String. Accepts string inputs for FolderPath, LogFile, EmptyFoldersLog, LogLevel.
-
 .OUTPUTS
 None. This script does not return any output to the console, but it does write to the specified log files.
-
 .NOTES
 This script should be used with caution and tested thoroughly on non-production data before real use. It uses recursion to scan the directory, which could be slow on directories with a large number of subdirectories.
-
 .VERSION
 1.0 Initial script
 1.1 Added error handling and logging
 1.2 Added option to rename log file if exists
 1.3 Added separate logging for empty folders
 1.4 Added option to control log level
-
 .AUTHOR
 Concept by Cláudio Gonçalves
 #>
