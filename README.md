@@ -11,6 +11,8 @@ ShowBalloonTips.ps1 is a PowerShell script designed to display balloon tips to t
 Find-EmptyFolders.ps1 is a robust PowerShell script that identifies and logs all empty directories within the given folder path. It also logs any encountered errors and allows for control of log verbosity. [Read more here](FindEmptyFolders/README.md).
 ### 4. Clear MS Teams Cache
 ClearTeamsCache.ps1 is a PowerShell script designed to clear the Microsoft Teams cache and restart the application. The script aims to improve Microsoft Teams performance by removing specific cache folders. It also performs checks for administrative rights, disk space, and network connectivity, and logs these events. [Read more here](ClearTeamsCache/README.md).
+### 5. Find Duplicate Files
+Find-DuplicateFiles.ps1 is a robust PowerShell script aimed at identifying and handling duplicate files within a given directory. The script uses hashing algorithms like MD5, SHA1, or SHA256 to identify duplicates. It offers a range of options such as exclusion of specific directories and file types, user confirmation for action, and more.[Read more here](Find-DuplicateFiles/README.md).
 ## Usage
 Each script can be used individually according to your needs. You can find specific instructions on how to use each script in their respective README files.
 ## Contribution
