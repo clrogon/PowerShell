@@ -20,17 +20,17 @@ The script can be run using either default parameters or custom values to tailor
 
 ### Using default values:
 
-\`\`\`powershell
+```powershell
 ./Find-DuplicateFiles.ps1
-\`\`\`
+```
 
 This will run the script with all the default parameters.
 
 ### Using custom values:
 
-\`\`\`powershell
+```powershell
 ./Find-DuplicateFiles.ps1 -targetDir "C:\MyFolder" -hashAlgorithm "SHA256" -exportPath "C:\MyExports\duplicates.csv" -logPath "C:\MyLogs\log.txt" -userConfirm "Delete"
-\`\`\`
+```
 
 This example runs the script targeting the "C:\MyFolder" directory, using the SHA256 algorithm, exporting duplicates to a custom CSV location, logging to a custom location, and deleting duplicates upon user confirmation.
 
