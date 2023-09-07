@@ -9,6 +9,8 @@ RebootReminder.ps1 is a PowerShell script designed to remind users to reboot the
 ShowBalloonTips.ps1 is a PowerShell script designed to display balloon tips to the user. This script can be used to show notifications, alerts, or reminders to the user. [Read more here](ShowBalloonTips/README.md).
 ### 3. Find Empty Folders
 Find-EmptyFolders.ps1 is a robust PowerShell script that identifies and logs all empty directories within the given folder path. It also logs any encountered errors and allows for control of log verbosity. [Read more here](FindEmptyFolders/README.md).
+### 4. Clear MS Teams Cache
+ClearTeamsCache.ps1 is a PowerShell script designed to clear the Microsoft Teams cache and restart the application. The script aims to improve Microsoft Teams performance by removing specific cache folders. It also performs checks for administrative rights, disk space, and network connectivity, and logs these events. [Read more here](ClearTeamsCache/README.md).
 ## Usage
 Each script can be used individually according to your needs. You can find specific instructions on how to use each script in their respective README files.
 ## Contribution
