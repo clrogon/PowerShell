@@ -35,7 +35,7 @@ Find-DuplicateFiles -targetDir 'C:\MyFiles' -hashAlgorithm 'SHA256' -userConfirm
 
 .NOTES
 File Name: Find-DuplicateFiles.ps1
-Author: InfoSec Connect
+Author: Cláudio Gonçalves
 Version: 2.0
 #>
 # Function to Calculate File Hash with exception handling
