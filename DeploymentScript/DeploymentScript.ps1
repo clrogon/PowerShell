@@ -3,30 +3,38 @@
     Automated Software Deployment Script
 
 .DESCRIPTION
-    This PowerShell script is designed to automate the deployment of software 
-    across multiple remote computers. It checks for prerequisites, validates 
-    environment and paths, handles secure credential management, and performs 
-    the software installation if necessary.
-
-    The script uses an MSI file for installation and logs activities for monitoring 
+    This PowerShell script is designed for the automated deployment of software 
+    using MSI installers across multiple remote computers. It checks prerequisites, 
+    validates network connectivity, handles secure credential management, performs 
+    conditional software installation, and logs all activities for monitoring 
     and troubleshooting.
 
 .PARAMETERS
     $msiFilePath: Path to the MSI installer file on the local system.
+                  Example: "C:\path\to\installer.msi"
+    
     $installerUrl: URL to download the MSI installer.
+                   Example: "https://example.com/installer.msi"
+    
     $installerPath: Temporary path on remote machines for the installer.
+                    Example: "\\remote\path\installer.msi"
+    
     $logPath: Path for the log file to record deployment details.
+              Example: "C:\path\to\log.txt"
+    
     $computers: Array of target computer names for deployment.
+                Example: @("Computer1", "Computer2", "Computer3")
 
 .EXAMPLE
     .\DeploymentScript.ps1
 
-    This command runs the script with the predefined parameters in the script.
+    Runs the script using the predefined parameters within the script, 
+    deploying the specified MSI installer to the target remote computers.
 
 .NOTES
-    Author: Cláudio Gonçalves
+    Author: [Your Name]
     Version: 1.0
-    Date: 13/11/2023
+    Date: [Today's Date or Last Update Date]
     Prerequisites: PowerShell 5.0 or higher, Administrative privileges
 
 #>
