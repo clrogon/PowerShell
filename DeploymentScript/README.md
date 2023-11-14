@@ -18,10 +18,13 @@ The script allows execution with either default parameters or custom options for
 
 ```powershell
 ./DeploymentScript.ps1
-
+```
 This runs the script with the predefined parameters.
 
 ### Using custom values:
 
 ```powershell
 ./DeploymentScript.ps1 -msiFilePath "C:\Custom\installer.msi" -installerUrl "https://example.com/custominstaller.msi" -logPath "C:\CustomLogs\deployment.log"
+```
+## Author
+Concept and development by Claudio Gonçalves.
