@@ -1,6 +1,10 @@
 # Reboot Reminder PowerShell Script
 ## Description
-**RebootReminder.ps1** is a PowerShell script designed to remind users to reboot their system if it hasn't been rebooted within a specified number of days. The script sends a balloon notification to the user. If the system is not rebooted within a specified timeframe, the script will enforce a system reboot.
+**RebootReminder.ps1** is a PowerShell script that prompts users to reboot their system if it hasn't been rebooted within a specified number of days. It sends balloon notifications for reminders and enforces reboots if necessary, with added functionality to skip reminders on weekends.
+## Features
+- **Weekend Skip**: Avoids sending reboot reminders on Saturdays and Sundays.
+- **Customizable Reminder and Enforcement Schedule**: Set custom days for reminders and enforce reboots after a specific timeframe.
+- **Enhanced Logging**: Logs activities to a specified path, including skipped weekends.
 
 This script is ideally run with the Windows Task Scheduler on a daily basis to check for the last reboot time.
 
