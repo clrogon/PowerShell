@@ -1,36 +1,42 @@
 <#
 .Synopsis
-   A script to remind the user to reboot their system.
-.DESCRIPTION
-   This script sends a Balloon Notification to the user to remind them to reboot the computer if it has not been rebooted for a specified number of days. 
-   If the computer isn't rebooted within a specified timeframe, it will enforce a system reboot.
-.EXAMPLE
-   ./RebootReminder.ps1 -DaysLimit 7
-   This example will run the script with the default values for HoursLimit (5 hours), LogPath (C:\temp\RebootLog.log), WorkStart (8 AM), and WorkEnd (5 PM).
-   
-   ./RebootReminder.ps1 -DaysLimit 7 -HoursLimit 4 -LogPath "C:\logs\RebootLog.log" -WorkStart 9 -WorkEnd 18
-   This example will run the script with custom values. The script will enforce a reboot if the computer hasn't been rebooted within 4 hours. It will log the events to C:\logs\RebootLog.log. The script will only send notifications between 9 AM and 6 PM.
-.INPUTS
-   Integer. The number of days to check for the last reboot.
-   Integer. The number of hours before enforcing a reboot (default is 5 hours).
-   String. The path for the log file (default is C:\temp\RebootLog.log).
-   Integer. The start of the workday in 24-hour format (default is 8).
-   Integer. The end of the workday in 24-hour format (default is 17).
-.OUTPUTS
-   None. The script enforces a system reboot or sends a visual notification to the user.
-.NOTES
-   This script is intended to be run using the Windows Task Scheduler. Schedule this script to run once per day to check for the last reboot time.
-.AUTHOR
-   Concept by Cláudio Gonçalves
+   A PowerShell script designed to prompt users for a system reboot if their computer has not been rebooted within a specified number of days.
+
+.Description
+   Utilizes balloon notifications to gently remind users to reboot their computer after it has been on for a specified number of days without a restart. The script incorporates checks to avoid reminding users on weekends and enforces a system reboot if the computer is not rebooted within a certain timeframe after the reminder, ensuring system updates and maintenance routines are applied.
+
+.Example
+   .\RebootReminder.ps1 -DaysLimit 7
+   Executes the script with default settings, setting the reminder for 7 days since the last reboot with a 5-hour window before a forced reboot, and logs events to the user's profile directory.
+
+.Example
+   .\RebootReminder.ps1 -DaysLimit 7 -HoursLimit 4 -LogPath "C:\logs\RebootLog.log" -WorkStart 9 -WorkEnd 18
+   Specifies a 7-day limit before reminders start, a 4-hour window for forced reboots after the reminder, a custom log path, and active reminder hours between 9 AM and 6 PM.
+
+.Inputs
+   -DaysLimit  Specifies the number of days to check since the last reboot before sending a reminder.
+   -HoursLimit  Defines the number of hours to wait after the first reminder before enforcing a reboot (default is 5 hours).
+   -LogPath     Custom path for logging script activities (default is $env:USERPROFILE\RebootLog.log).
+   -WorkStart   Start hour in 24-hour format for when reminders can begin being sent.
+   -WorkEnd     End hour in 24-hour format for when reminders should stop being sent.
+
+.Outputs
+   None. The script interacts directly with the user through notifications and potentially enforces a system reboot.
+
+.Notes
+   Designed for deployment via Windows Task Scheduler for daily execution. Incorporates checks to skip reminders on weekends, robust error handling to log issues to a specified path, and ensures clean resource management for optimal script performance.
+   Version: 3.2
+   Author: Concept by Cláudio Gonçalves
+   Last Updated: 07/02/2024
 #>
 
 param (
-    [Parameter(Mandatory=$true)]
-    [int]$DaysLimit,
+    [Parameter(Mandatory=$false)]
+    [int]$DaysLimit = 7,
     [Parameter(Mandatory=$false)]
     [int]$HoursLimit = 5,
     [Parameter(Mandatory=$false)]
-    [string]$LogPath = "C:\temp\RebootLog.log",
+    [string]$LogPath = "$env:USERPROFILE\RebootLog.log",  # Updated default path
     [Parameter(Mandatory=$false)]
     [int]$WorkStart = 8,
     [Parameter(Mandatory=$false)]
@@ -40,8 +46,6 @@ param (
 # Load necessary assemblies for Windows Forms and VB message box
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName Microsoft.VisualBasic
-
-$Global:TimeEnd = $null
 
 # Function to check the last time the computer has been rebooted
 Function Check-RebootTime {
@@ -57,7 +61,7 @@ Function Create-BalloonNotification ($Text, $Title) {
     $Balloon.BalloonTipIcon = "Warning"
     $Balloon.BalloonTipText = $Text
     $Balloon.BalloonTipTitle = $Title
-    $Balloon.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($PSHOME + "\powershell.exe")
+    $Balloon.Icon = [System.Drawing.SystemIcons]::Information
     $Balloon.Visible = $true
     $Balloon.ShowBalloonTip(0)
     Return $Balloon
@@ -70,8 +74,9 @@ Function Create-RestartPrompt {
         Shutdown /g /t 0 /f
     }
     else {
-        $Global:TimeEnd = $Global:TimeEnd.AddHours(2)
+        return $true
     }
+    return $false
 }
 
 # Function to enforce a system reboot
@@ -81,45 +86,92 @@ Function Enforce-Reboot {
 
 # Function to check if user session is active
 Function Check-UserSession {
-    $Session = query user /server:$env:computername 2>&1 | where {$_ -notmatch "^(>|No User exists for *)" } 
-    return $Session
+    $SessionInfo = query user 2>&1
+    $activeSessionFound = $false
+    
+    foreach ($line in $SessionInfo) {
+        if ($line -match "\s+Active") {
+            $activeSessionFound = $true
+            break
+        }
+    }
+    
+    if ($activeSessionFound) {
+        Add-Content -Path $LogPath -Value "$(Get-Date) - An active user session was found."
+        return $true
+    } else {
+        Add-Content -Path $LogPath -Value "$(Get-Date) - No active user sessions found."
+        return $false
+    }
+}
+
+# Function to Check for Weekends
+function Is-Weekend {
+    $today = (Get-Date).DayOfWeek
+    return $today -eq 'Saturday' -or $today -eq 'Sunday'
 }
 
 # Main execution block
 Try {
     Add-Content -Path $LogPath -Value "$(Get-Date) - Script started."
-    $Days = Check-RebootTime
-    if ($Days -ge $DaysLimit) {
-        $TimeStart = Get-Date
-        $Global:TimeEnd = $TimeStart.AddHours($HoursLimit)
-        $WaitSeconds = 1200
-        $Text = "This computer hasn't rebooted for at least $DaysLimit days. This alert will appear every 30 minutes until the computer is rebooted. Please save your work."
-        $Title ="Notice: Pending Reboot Needed"
-        do {
-            $TimeNow = Get-Date
-            if ($TimeNow -ge $Global:TimeEnd) {
-                Add-Content -Path $LogPath -Value "$(Get-Date) - Time limit reached. Enforcing reboot."
-                Enforce-Reboot
-            }
-            else {
-                if ($TimeNow.Hour -ge $WorkStart -and $TimeNow.Hour -le $WorkEnd) {
-                    $Balloon = Create-BalloonNotification -Text $Text -Title $Title
-                    if (Get-EventSubscriber -SourceIdentifier 'click_event' -ErrorAction SilentlyContinue) {
-                        Unregister-Event -SourceIdentifier 'click_event' -ErrorAction SilentlyContinue
+    
+    # Check if today is a weekend
+    if (-not (Is-Weekend)) {
+        $Days = Check-RebootTime
+        if ($Days -ge $DaysLimit) {
+            $TimeStart = Get-Date
+            $TimeEnd = $TimeStart.AddHours($HoursLimit)
+            $WaitSeconds = 1200
+            $Text = "This computer hasn't rebooted for at least $DaysLimit days. This alert will appear every 30 minutes until the computer is rebooted. Please save your work."
+            $Title = "Notice: Pending Reboot Needed"
+
+            do {
+                $TimeNow = Get-Date
+                if ($TimeNow -ge $TimeEnd) {
+                    Add-Content -Path $LogPath -Value "$(Get-Date) - Time limit reached. Enforcing reboot."
+                    Enforce-Reboot
+                } else {
+                    if ($TimeNow.Hour -ge $WorkStart -and $TimeNow.Hour -le $WorkEnd) {
+                        $Balloon = Create-BalloonNotification -Text $Text -Title $Title
+                        
+                        # Ensure any existing click event is unregistered before registering a new one
+                        $existingEvent = Get-EventSubscriber -SourceIdentifier 'click_event' -ErrorAction SilentlyContinue
+                        if ($existingEvent) {
+                            Unregister-Event -SourceIdentifier 'click_event'
+                        }
+                        
+                        Register-ObjectEvent $Balloon BalloonTipClicked -SourceIdentifier 'click_event' -Action {
+                            Create-RestartPrompt
+                        } | Out-Null
+                        
+                        Wait-Event -Timeout $WaitSeconds -SourceIdentifier click_event > $null
+                        $Balloon.Dispose()
                     }
-                    Register-ObjectEvent $Balloon BalloonTipClicked -SourceIdentifier click_event -Action { Create-RestartPrompt } | Out-Null
-                    Wait-Event -Timeout $WaitSeconds -SourceIdentifier click_event > $null
-                    $Balloon.Dispose()
+                    Add-Content -Path $LogPath -Value "$(Get-Date) - Reminder sent, user session status: $(Check-UserSession)"
                 }
-                Add-Content -Path $LogPath -Value "$(Get-Date) - Reminder sent, last reboot time: $($LastBoot), user session status: $(Check-UserSession)"
-            }
+            } Until ($TimeNow -ge $TimeEnd -or (!(Check-UserSession)))
         }
-        Until (($TimeNow -ge $Global:TimeEnd) -or (!(Check-UserSession)))
+        Add-Content -Path $LogPath -Value "$(Get-Date) - Script ended."
+    } else {
+        Add-Content -Path $LogPath -Value "$(Get-Date) - Today is a weekend. No reminder needed."
     }
-    Add-Content -Path $LogPath -Value "$(Get-Date) - Script ended."
-}
+} 
+
 Catch {
-    $ErrorMessage = "An error occurred: $_"
-    Write-Error $ErrorMessage
-    Add-Content -Path $LogPath -Value "$(Get-Date) - $ErrorMessage"
+    $ErrorMessage = $_.Exception.Message
+    $LogDirectory = Split-Path $LogPath -Parent
+    if (Test-Path $LogDirectory) {
+        Add-Content -Path $LogPath -Value "$(Get-Date) - Error encountered: $ErrorMessage"
+    } else {
+        Write-Error "Log directory does not exist and cannot log the error: $ErrorMessage"
+        New-Item -ItemType Directory -Path $LogDirectory -Force
+        Add-Content -Path $LogPath -Value "$(Get-Date) - Error encountered: $ErrorMessage"
+    }
+} 
+
+Finally {
+    # Cleanup operations to ensure the script exits cleanly, regardless of success or failure
+    if ($Balloon) {
+        $Balloon.Dispose()
+    }
 }
