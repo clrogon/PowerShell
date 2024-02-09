@@ -1,15 +1,17 @@
 # Reboot Reminder PowerShell Script
 ## Description
-**RebootReminder.ps1** is a PowerShell script that prompts users to reboot their system if it hasn't been rebooted within a specified number of days. It sends balloon notifications for reminders and enforces reboots if necessary, with added functionality to skip reminders on weekends.
+**RebootReminder.ps1** is a PowerShell script designed to encourage regular system reboots to maintain security and performance on Windows-based workstations. It notifies users with balloon notifications to reboot their system if it hasn't been rebooted within a specified threshold and enforces reboots after a defined period. The script is enhanced with functionality to accommodate user work patterns, including the ability to skip reminders on weekends and to only send notifications during work hours.
 ## Features
-- **Weekend Skip**: Avoids sending reboot reminders on Saturdays and Sundays.
-- **Customizable Reminder and Enforcement Schedule**: Set custom days for reminders and enforce reboots after a specific timeframe.
-- **Enhanced Logging**: Logs activities to a specified path, including skipped weekends.
+- **Weekend Skip**: No reboot reminders are sent on Saturdays and Sundays to avoid disrupting users during off days.
+- **Customizable Reminder and Enforcement Schedule**: Administrators can define custom thresholds for sending reminders and enforcing reboots.
+- **Enhanced Logging**: All script activities, including any actions skipped due to weekends, are logged for audit and troubleshooting purposes.
+- **User Interaction**: Users are prompted with a notification to reboot and have the option to postpone during work hours. Post grace period, a reboot will be enforced to ensure system updates.
 
-This script is ideally run with the Windows Task Scheduler on a daily basis to check for the last reboot time.
+The script is intended for daily execution, typically using the Windows Task Scheduler, to monitor system uptime and ensure compliance with organizational reboot policies.
 
 ## Usage
-You can run the script with custom parameters or with default values. Here are some examples:
+The script accepts various parameters allowing for tailored execution to fit organizational needs.
+Here are some examples:
 
 Using default values:
 
