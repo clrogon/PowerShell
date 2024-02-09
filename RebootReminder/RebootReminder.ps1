@@ -49,9 +49,9 @@ Add-Type -AssemblyName Microsoft.VisualBasic
 
 # Function to check the last time the computer has been rebooted
 Function Check-RebootTime {
-    $OS = Get-WmiObject -Namespace "root\cimv2" -Class "win32_OperatingSystem"
-    $LastBoot = $OS.ConvertToDateTime($OS.LastBootUpTime)
-    $Days = ((Get-Date)-$LastBoot).Days
+    $OS = Get-CimInstance -ClassName "Win32_OperatingSystem"
+    $LastBoot = $OS.LastBootUpTime
+    $Days = ((Get-Date) - $LastBoot).Days
     Return $Days
 }
 
@@ -63,7 +63,8 @@ Function Create-BalloonNotification ($Text, $Title) {
     $Balloon.BalloonTipTitle = $Title
     $Balloon.Icon = [System.Drawing.SystemIcons]::Information
     $Balloon.Visible = $true
-    $Balloon.ShowBalloonTip(0)
+    # Set the timeout to 10 seconds (10000 milliseconds)
+    $Balloon.ShowBalloonTip(10000)
     Return $Balloon
 }
 
@@ -121,7 +122,7 @@ Try {
         if ($Days -ge $DaysLimit) {
             $TimeStart = Get-Date
             $TimeEnd = $TimeStart.AddHours($HoursLimit)
-            $WaitSeconds = 1200
+            $WaitSeconds = 300
             $Text = "This computer hasn't rebooted for at least $DaysLimit days. This alert will appear every 30 minutes until the computer is rebooted. Please save your work."
             $Title = "Notice: Pending Reboot Needed"
 
@@ -130,33 +131,28 @@ Try {
                 if ($TimeNow -ge $TimeEnd) {
                     Add-Content -Path $LogPath -Value "$(Get-Date) - Time limit reached. Enforcing reboot."
                     Enforce-Reboot
-                } else {
-                    if ($TimeNow.Hour -ge $WorkStart -and $TimeNow.Hour -le $WorkEnd) {
-                        $Balloon = Create-BalloonNotification -Text $Text -Title $Title
-                        
-                        # Ensure any existing click event is unregistered before registering a new one
-                        $existingEvent = Get-EventSubscriber -SourceIdentifier 'click_event' -ErrorAction SilentlyContinue
-                        if ($existingEvent) {
-                            Unregister-Event -SourceIdentifier 'click_event'
-                        }
-                        
-                        Register-ObjectEvent $Balloon BalloonTipClicked -SourceIdentifier 'click_event' -Action {
-                            Create-RestartPrompt
-                        } | Out-Null
-                        
-                        Wait-Event -Timeout $WaitSeconds -SourceIdentifier click_event > $null
-                        $Balloon.Dispose()
-                    }
-                    Add-Content -Path $LogPath -Value "$(Get-Date) - Reminder sent, user session status: $(Check-UserSession)"
+                    break
                 }
-            } Until ($TimeNow -ge $TimeEnd -or (!(Check-UserSession)))
+                
+                if ($TimeNow.Hour -ge $WorkStart -and $TimeNow.Hour -le $WorkEnd) {
+                    $Balloon = Create-BalloonNotification -Text $Text -Title $Title
+
+                    # No need to unregister a click event since we are not relying on it for the main loop logic
+                    $Balloon.ShowBalloonTip(10000)
+
+                    Start-Sleep -Seconds $WaitSeconds
+                    $Balloon.Dispose()
+                }
+
+                Add-Content -Path $LogPath -Value "$(Get-Date) - Reminder sent, user session status: $(Check-UserSession)"
+                Start-Sleep -Seconds $WaitSeconds
+            } While ($TimeNow -lt $TimeEnd)
         }
         Add-Content -Path $LogPath -Value "$(Get-Date) - Script ended."
     } else {
         Add-Content -Path $LogPath -Value "$(Get-Date) - Today is a weekend. No reminder needed."
     }
-} 
-
+}
 Catch {
     $ErrorMessage = $_.Exception.Message
     $LogDirectory = Split-Path $LogPath -Parent
@@ -167,8 +163,7 @@ Catch {
         New-Item -ItemType Directory -Path $LogDirectory -Force
         Add-Content -Path $LogPath -Value "$(Get-Date) - Error encountered: $ErrorMessage"
     }
-} 
-
+}
 Finally {
     # Cleanup operations to ensure the script exits cleanly, regardless of success or failure
     if ($Balloon) {
