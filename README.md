@@ -15,6 +15,8 @@ Here are the scripts currently in this repository:
 `Find-DuplicateFiles.ps1` is a robust PowerShell script aimed at identifying and handling duplicate files within a given directory. The script uses hashing algorithms like MD5, SHA1, or SHA256 to identify duplicates. It offers a range of options such as exclusion of specific directories and file types, user confirmation for action, and more.[Read more here](Find-DuplicateFiles/README.md).
 ### 6. Deployment Script
 `DeploymentScript.ps1` is a versatile PowerShell script designed for automating the deployment of software using MSI files across multiple remote computers. It handles various administrative tasks such as checking system prerequisites, validating network connections, managing credentials securely, and logging the deployment process.[Read more here](DeploymentScript/README.md).
+### 7. USB Port and Storage Card Management Tool
+`USBManagementTool.ps1` is a PowerShell script designed to enable, disable, and monitor the status of USB storage device access and storage card usage on Windows systems. This tool provides a graphical user interface (GUI) for easy interaction and requires administrative privileges for operation.[Read more here](DeploymentScript/README.md).
 
 ## Usage
 Each script can be used individually according to your needs. You can find specific instructions on how to use each script in their respective README files.
