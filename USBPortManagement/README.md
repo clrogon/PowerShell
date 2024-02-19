@@ -27,7 +27,8 @@ No installation is required. Download the `USBManagementTool.ps1` script and run
 4. Use the GUI to enable/disable USB storage and storage cards. The current status is displayed and updated dynamically.
 
 ## Logging
-[!NOTE]
+> [!NOTE]
+> Useful information that users should know, even when skimming content.
 The tool logs all actions and errors to the Windows Event Log under the "Application" log. This can be viewed using the Event Viewer (eventvwr.msc).
 
 ## Versioning
