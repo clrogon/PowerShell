@@ -28,8 +28,7 @@ No installation is required. Download the `USBManagementTool.ps1` script and run
 
 ## Logging
 > [!NOTE]
-> Useful information that users should know, even when skimming content.
-The tool logs all actions and errors to the Windows Event Log under the "Application" log. This can be viewed using the Event Viewer (eventvwr.msc).
+> The tool logs all actions and errors to the Windows Event Log under the "Application" log. This can be viewed using the Event Viewer (eventvwr.msc).
 
 ## Versioning
 1.1: Added toast notifications and dynamic status monitoring.
