@@ -16,7 +16,7 @@ Here are the scripts currently in this repository:
 ### 6. Deployment Script
 `DeploymentScript.ps1` is a versatile PowerShell script designed for automating the deployment of software using MSI files across multiple remote computers. It handles various administrative tasks such as checking system prerequisites, validating network connections, managing credentials securely, and logging the deployment process.[Read more here](DeploymentScript/README.md).
 ### 7. USB Port and Storage Card Management Tool
-`USBManagementTool.ps1` is a PowerShell script designed to enable, disable, and monitor the status of USB storage device access and storage card usage on Windows systems. This tool provides a graphical user interface (GUI) for easy interaction and requires administrative privileges for operation.[Read more here](DeploymentScript/README.md).
+`USBManagementTool.ps1` is a PowerShell script designed to enable, disable, and monitor the status of USB storage device access and storage card usage on Windows systems. This tool provides a graphical user interface (GUI) for easy interaction and requires administrative privileges for operation.[Read more here](USBPortManagement/README.md).
 
 ## Usage
 Each script can be used individually according to your needs. You can find specific instructions on how to use each script in their respective README files.
