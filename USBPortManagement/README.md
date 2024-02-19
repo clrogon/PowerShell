@@ -32,7 +32,7 @@ The tool logs all actions and errors to the Windows Event Log under the "Applica
 ## Versioning
 1.1: Added toast notifications and dynamic status monitoring.
 ## Author
-Claudio Gonçalves - Feedback and suggestions are welcome at [Your Contact Information].
+Claudio Gonçalves - Feedback and suggestions are welcome.
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
