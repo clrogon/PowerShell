@@ -7,6 +7,10 @@ Welcome to my PowerShell Scripts Repository, a personal collection crafted to st
 > [!IMPORTANT]
 > **Important Notice:** The PowerShell scripts within this repository are provided "as is", with no guarantees. Your use of these scripts is solely at your own discretion and risk. It is strongly recommended to thoroughly test each script in a controlled, non-production environment before incorporating them into your regular workflow. This step ensures compatibility and prevents any unintended consequences in your systems or operations.
 
+## Security Recommendation: Digital Signing of Scripts
+> [!TIP]
+>For enhanced security and to ensure the integrity of the scripts within this repository, it is highly recommended to digitally sign the PowerShell scripts before use. Digital signing certifies the source and confirms that the script has not been altered or compromised since it was signed. This practice helps protect your environment against the execution of unauthorized or malicious scripts, aligning with best practices for script management and deployment in professional IT environments.
+
 ## Scripts
 Here are the scripts currently in this repository:
 
