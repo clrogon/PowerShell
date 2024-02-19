@@ -57,10 +57,11 @@ The tool uses specific Event IDs to categorize different types of actions and er
 
 ### Log Analysis
 
-> [!TIP]
+> [!NOTE]
 > Analyzing these event logs can help system administrators track how and when USB storage and Storage Card settings are changed, identify unauthorized changes, and troubleshoot issues related to device access. Each log entry includes the date and time of the event, the Event ID, a description of the action or error, and the username of the individual who executed the action if applicable.
 
-For in-depth analysis or automated monitoring, consider using PowerShell scripts or third-party log management tools to filter and alert on specific Event IDs related to this tool.
+> [!TIP]
+> For in-depth analysis or automated monitoring, consider using PowerShell scripts or third-party log management tools to filter and alert on specific Event IDs related to this tool.
 
 
 ## Versioning
