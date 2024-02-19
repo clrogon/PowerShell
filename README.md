@@ -1,11 +1,11 @@
 # PowerShell Scripts Repository
 
 ## Description
-Welcome to the PowerShell Scripts Repository. This repository is a collection of scripts that assist me in my daily tasks as a System Administrator. Each script is designed to automate or simplify a particular task, making my work more efficient and less prone to errors.
+Welcome to my PowerShell Scripts Repository, a personal collection crafted to streamline and enhance system administration tasks. Each script, born from daily challenges and insights, is tailored to automate or simplify operations, significantly boosting efficiency and reducing errors. This repository is not just a toolset but a reflection of practical, hands-on experience designed to empower fellow administrators with solutions that have been tested in the trenches of IT management.
 
 ## Disclaimer
 > [!IMPORTANT]
-> **Use of scripts from this repository is at your own risk. Testing in a controlled environment before production use is strongly advised.**
+> **Important Notice:** The PowerShell scripts within this repository are provided "as is", with no guarantees. Your use of these scripts is solely at your own discretion and risk. It is strongly recommended to thoroughly test each script in a controlled, non-production environment before incorporating them into your regular workflow. This step ensures compatibility and prevents any unintended consequences in your systems or operations.
 
 ## Scripts
 Here are the scripts currently in this repository:
@@ -32,10 +32,10 @@ Here are the scripts currently in this repository:
 `USBManagementTool.ps1` is a PowerShell script designed to enable, disable, and monitor the status of USB storage device access and storage card usage on Windows systems. This tool provides a graphical user interface (GUI) for easy interaction and requires administrative privileges for operation. [Read more here](USBPortManagement/README.md).
 
 ## Usage
-Each script can be used individually according to your needs. You can find specific instructions on how to use each script in their respective README files.
+Each script in this repository is designed for standalone use, tailored to specific system administration tasks. For detailed guidance on deployment and customization, refer to the README files accompanying each script. These documents offer step-by-step instructions, ensuring you can leverage the full potential of each tool efficiently.
 
 ## Contribution
-Feel free to contribute to this repository by submitting pull requests. Please ensure your scripts are well-documented, especially if they require specific setup or usage instructions.
+We warmly welcome contributions to enrich this repository. If you've developed a script that can benefit the system administration community, please share it with us through a pull request. We ask that your submissions include comprehensive documentation, covering usage, setup, and any prerequisites, to assist others in seamlessly integrating your solutions.
 
-## Author
-Scripts curated by Cláudio Gonçalves
+## Author Note
+"Curated with care by Cláudio Gonçalves, this repository reflects a commitment to sharing knowledge and tools that make the demanding role of a system administrator a bit easier. Each script is a product of practical experience and is intended to offer a helping hand to peers in the IT field."
