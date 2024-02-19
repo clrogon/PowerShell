@@ -24,19 +24,20 @@ No installation is required. Download the `USBManagementTool.ps1` script and run
 3. Execute the script:
    ```powershell
    .\USBManagementTool.ps1
-Use the GUI to enable/disable USB storage and storage cards. The current status is displayed and updated dynamically.
-Logging
+4. Use the GUI to enable/disable USB storage and storage cards. The current status is displayed and updated dynamically.
+
+## Logging
 The tool logs all actions and errors to the Windows Event Log under the "Application" log. This can be viewed using the Event Viewer (eventvwr.msc).
 
-Versioning
+## Versioning
 1.1: Added toast notifications and dynamic status monitoring.
-Author
+## Author
 Claudio Gonçalves - Feedback and suggestions are welcome at [Your Contact Information].
 
-License
+## License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-Acknowledgments
+## Acknowledgments
 Special thanks to contributors and users for their feedback and suggestions that helped improve this tool.
 
 Feel free to customize this `README.md` file as needed, including updating the contact information, adding a section for known issues or FAQs, or providing more detailed instructions on using the tool.
