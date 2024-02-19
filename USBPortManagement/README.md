@@ -38,6 +38,4 @@ Claudio Gonçalves - Feedback and suggestions are welcome at [Your Contact Infor
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
-Special thanks to contributors and users for their feedback and suggestions that helped improve this tool.
-
 Feel free to customize this `README.md` file as needed, including updating the contact information, adding a section for known issues or FAQs, or providing more detailed instructions on using the tool.
