@@ -1,7 +1,25 @@
 # USB Port and Storage Card Management Tool
 
 ## Overview
-The USB Port and Storage Card Management Tool is a PowerShell script designed to enable, disable, and monitor the status of USB storage device access and storage card usage on Windows systems. This tool provides a graphical user interface (GUI) for easy interaction and requires administrative privileges for operation.
+
+The USB Port and Storage Card Management Tool is a PowerShell script developed to offer administrators and users an intuitive way to enable, disable, and monitor access to USB storage devices and storage cards on Windows systems. Featuring a user-friendly graphical user interface (GUI), this tool simplifies the management of these devices and ensures compliance with organizational security policies.
+
+Designed primarily as a proof of concept, this tool demonstrates how PowerShell scripting can be leveraged to manage device access controls directly within the Windows environment. It operates by modifying specific registry settings related to USB storage and storage card access, providing immediate changes applicable to the local machine.
+
+While effective for individual or small-scale deployments, this script-based approach may not be optimal for larger, domain-joined environments where centralized management is preferred. In such cases, utilizing Group Policy Objects (GPOs) or advanced security platforms can offer more scalable and manageable solutions. These methods enable administrators to enforce access policies across multiple systems simultaneously, ensuring uniformity and easier policy updates.
+
+> [!TIP]
+>For environments where GPOs or other centralized management tools are not feasible or available, this script can be adapted to suit larger deployments with additional development effort. Future versions of this tool may include features to support such scalability directly, enhancing its utility in diverse IT landscapes.
+
+### Registry Editing Approach
+
+The tool adjusts system behavior by editing the Windows Registry, specifically targeting keys associated with USB storage (e.g., `HKLM\SYSTEM\CurrentControlSet\Services\USBSTOR`) and storage card access (e.g., `HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\System\AllowStorageCard`). Changing the value of these keys enables or disables the respective device types.
+
+> [!CAUTION]
+>It's important to note that registry modifications carry inherent risks, including potential system instability if done incorrectly. This tool carefully manages these changes to minimize risk, but administrators are encouraged to test any modifications in a controlled environment before widespread deployment.
+
+By providing a straightforward and interactive method to manage device access, this tool aids in enhancing system security while accommodating both immediate needs and potential future expansions in device management strategy.
+
 
 ## Features
 - **Enable/Disable USB Storage**: Quickly enable or disable access to USB storage devices.
