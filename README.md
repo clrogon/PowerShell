@@ -38,4 +38,5 @@ Each script in this repository is designed for standalone use, tailored to speci
 We warmly welcome contributions to enrich this repository. If you've developed a script that can benefit the system administration community, please share it with us through a pull request. We ask that your submissions include comprehensive documentation, covering usage, setup, and any prerequisites, to assist others in seamlessly integrating your solutions.
 
 ## Author Note
-"Curated with care by Cláudio Gonçalves, this repository reflects a commitment to sharing knowledge and tools that make the demanding role of a system administrator a bit easier. Each script is a product of practical experience and is intended to offer a helping hand to peers in the IT field."
+> [!NOTE]
+>Curated with care by Cláudio Gonçalves, this repository reflects a commitment to sharing knowledge and tools that make the demanding role of a system administrator a bit easier. Each script is a product of practical experience and is intended to offer a helping hand to peers in the IT field.
