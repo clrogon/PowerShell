@@ -2,14 +2,14 @@
 
 ## Overview
 
-The USB Port and Storage Card Management Tool is a PowerShell script developed to offer administrators and users an intuitive way to enable, disable, and monitor access to USB storage devices and storage cards on Windows systems. Featuring a user-friendly graphical user interface (GUI), this tool simplifies the management of these devices and ensures compliance with organizational security policies.
+The USB Port and Storage Card Management Tool is a PowerShell script that allows administrators and users to easily activate, stop, and monitor access to USB storage devices and cards on Windows computers. This solution, which has an easy-to-use graphical user interface (GUI), streamlines device administration while also ensuring compliance with organizational security requirements.
 
-Designed primarily as a proof of concept, this tool demonstrates how PowerShell scripting can be leveraged to manage device access controls directly within the Windows environment. It operates by modifying specific registry settings related to USB storage and storage card access, providing immediate changes applicable to the local machine.
+This tool, created largely as a proof of concept, shows how PowerShell scripting may be used to handle device access controls directly within the Windows environment. It works by altering particular registry settings relating to USB storage and storage card access, resulting in instantaneous modifications that apply to the local machine.
 
-While effective for individual or small-scale deployments, this script-based approach may not be optimal for larger, domain-joined environments where centralized management is preferred. In such cases, utilizing Group Policy Objects (GPOs) or advanced security platforms can offer more scalable and manageable solutions. These methods enable administrators to enforce access policies across multiple systems simultaneously, ensuring uniformity and easier policy updates.
+While this script-based technique is appropriate for individual or small-scale deployments, it may not be ideal for larger, domain-joined environments that require centralized administration. In such circumstances, using Group Policy Objects (GPOs) or sophisticated security platforms may provide more scalable and controllable solutions. These solutions allow administrators to implement access policies across several systems at the same time, resulting in more uniformity and ease of policy modifications.
 
 > [!TIP]
->For environments where GPOs or other centralized management tools are not feasible or available, this script can be adapted to suit larger deployments with additional development effort. Future versions of this tool may include features to support such scalability directly, enhancing its utility in diverse IT landscapes.
+>In contexts where GPOs or other centralized administration tools are not viable or accessible, this script may be expanded to accommodate bigger installations with further programming work. Future versions of this tool may contain capabilities that directly allow such scalability, making it more useful in a variety of IT landscapes.
 
 ### Registry Editing Approach
 
@@ -18,7 +18,7 @@ The tool adjusts system behavior by editing the Windows Registry, specifically t
 > [!CAUTION]
 >It's important to note that registry modifications carry inherent risks, including potential system instability if done incorrectly. This tool carefully manages these changes to minimize risk, but administrators are encouraged to test any modifications in a controlled environment before widespread deployment.
 
-By providing a straightforward and interactive method to manage device access, this tool aids in enhancing system security while accommodating both immediate needs and potential future expansions in device management strategy.
+This tool helps to improve system security by offering a simple and interactive way to control device access, while also supporting both immediate demands and anticipated future expansions in device management strategies.
 
 
 ## Features
@@ -76,7 +76,7 @@ The tool uses specific Event IDs to categorize different types of actions and er
 ### Log Analysis
 
 > [!NOTE]
-> Analyzing these event logs can help system administrators track how and when USB storage and Storage Card settings are changed, identify unauthorized changes, and troubleshoot issues related to device access. Each log entry includes the date and time of the event, the Event ID, a description of the action or error, and the username of the individual who executed the action if applicable.
+> Analyzing these event logs allows system administrators to keep track of how and when USB storage and Storage Card settings are modified, identify illegal modifications, and address device access issues. Each log entry contains the date and time of the occurrence, the occurrence ID, a description of the action or error, and, if relevant, the username of the person who performed the operation.
 
 > [!TIP]
 > For in-depth analysis or automated monitoring, consider using PowerShell scripts or third-party log management tools to filter and alert on specific Event IDs related to this tool.
