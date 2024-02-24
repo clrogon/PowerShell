@@ -8,6 +8,27 @@
 - **User Interaction**: Users are prompted with a notification to reboot and have the option to postpone during work hours. Post grace period, a reboot will be enforced to ensure system updates.
 
 The script is intended for daily execution, typically using the Windows Task Scheduler, to monitor system uptime and ensure compliance with organizational reboot policies.
+## FlowCahrt
+
+```mermaid
+graph TD
+    A[Start: Parameter Definition] --> B[Load Assemblies]
+    B --> C[Check-RebootTime Function]
+    C --> D[Create-BalloonNotification Function]
+    D --> E[Create-RestartPrompt Function]
+    E --> F[Enforce-Reboot Function]
+    F --> G[Check-UserSession Function]
+    G --> H[Is-Weekend Function]
+    H --> I{Is it Weekend?}
+    I -->|Yes| J[Log: No action needed]
+    I -->|No| K[Check days since last reboot]
+    K --> L{Days > DaysLimit?}
+    L -->|Yes| M[Loop: Check time, Show notifications, Enforce reboot]
+    L -->|No| N[Log: No reboot needed]
+    M --> O[End: Logging and Cleanup]
+    J --> O
+    N --> O
+```
 
 ## Usage
 The script accepts various parameters allowing for tailored execution to fit organizational needs.
@@ -50,23 +71,3 @@ Please note, you need to run the PowerShell command prompt as an administrator t
 - WorkEnd: Optional parameter. The end of the workday in 24-hour format. Default is 17.
 ## Author
 Concept by Cláudio Gonçalves
-
-```mermaid
-graph TD
-    A[Start: Parameter Definition] --> B[Load Assemblies]
-    B --> C[Check-RebootTime Function]
-    C --> D[Create-BalloonNotification Function]
-    D --> E[Create-RestartPrompt Function]
-    E --> F[Enforce-Reboot Function]
-    F --> G[Check-UserSession Function]
-    G --> H[Is-Weekend Function]
-    H --> I{Is it Weekend?}
-    I -->|Yes| J[Log: No action needed]
-    I -->|No| K[Check days since last reboot]
-    K --> L{Days > DaysLimit?}
-    L -->|Yes| M[Loop: Check time, Show notifications, Enforce reboot]
-    L -->|No| N[Log: No reboot needed]
-    M --> O[End: Logging and Cleanup]
-    J --> O
-    N --> O
-```
