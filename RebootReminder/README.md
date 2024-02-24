@@ -8,7 +8,7 @@
 - **User Interaction**: Users are prompted with a notification to reboot and have the option to postpone during work hours. Post grace period, a reboot will be enforced to ensure system updates.
 
 The script is intended for daily execution, typically using the Windows Task Scheduler, to monitor system uptime and ensure compliance with organizational reboot policies.
-## FlowCahrt
+## FlowChart
 
 ```mermaid
 graph TD
