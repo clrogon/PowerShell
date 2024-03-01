@@ -29,7 +29,28 @@ graph TD
     J --> O
     N --> O
 ```
-
+```mermaid
+flowchart TB
+    Start(Start) --> CheckWeekend{Is it Weekend?}
+    CheckWeekend -- Yes --> End(End, No operation)
+    CheckWeekend -- No --> LoadAssemblies{Load UI Assemblies}
+    LoadAssemblies -- Failure --> LogError(Log Error) --> End
+    LoadAssemblies -- Success --> CheckLogFile[Check Log File Existence]
+    CheckLogFile --> ArchiveLog{Is Archiving Needed?}
+    ArchiveLog -- Yes --> Archive(Archive Log) --> CheckRebootTime
+    ArchiveLog -- No --> CheckRebootTime{Check Last Reboot Time}
+    CheckRebootTime --> DaysComparison{Days >= DaysLimit?}
+    DaysComparison -- No --> End
+    DaysComparison -- Yes --> ReminderLoop[Enter Reminder Loop]
+    ReminderLoop --> CheckTime{Check Current Time}
+    CheckTime --> WithinWorkHours{Within Work Hours?}
+    WithinWorkHours -- No --> Wait[Wait for Reminder Interval] --> ReminderLoop
+    WithinWorkHours -- Yes --> ShowNotification{Show Toast Notification}
+    ShowNotification --> UserAction{User Action}
+    UserAction --> |Restart Now| EnforceReboot(Enforce Reboot)
+    UserAction --> |Dismiss| Wait --> ReminderLoop
+    EnforceReboot --> End
+```
 ## Usage
 The script accepts various parameters allowing for tailored execution to fit organizational needs.
 Here are some examples:
