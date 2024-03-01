@@ -25,47 +25,7 @@ graph TD
     CheckUserSession --> FinalLog[Log Completion and Clean Up] --> End(End of Script)
     RebootCheck -->|Beyond Limit| FinalLog
 ```
-```mermaid
-graph TD
-    A[Start: Parameter Definition] --> B[Load Assemblies]
-    B --> C[Check-RebootTime Function]
-    C --> D[Create-BalloonNotification Function]
-    D --> E[Create-RestartPrompt Function]
-    E --> F[Enforce-Reboot Function]
-    F --> G[Check-UserSession Function]
-    G --> H[Is-Weekend Function]
-    H --> I{Is it Weekend?}
-    I -->|Yes| J[Log: No action needed]
-    I -->|No| K[Check days since last reboot]
-    K --> L{Days > DaysLimit?}
-    L -->|Yes| M[Loop: Check time, Show notifications, Enforce reboot]
-    L -->|No| N[Log: No reboot needed]
-    M --> O[End: Logging and Cleanup]
-    J --> O
-    N --> O
-```
-```mermaid
-flowchart TB
-    Start(Start) --> CheckWeekend{Is it Weekend?}
-    CheckWeekend -- Yes --> End(End, No operation)
-    CheckWeekend -- No --> LoadAssemblies{Load UI Assemblies}
-    LoadAssemblies -- Failure --> LogError(Log Error) --> End
-    LoadAssemblies -- Success --> CheckLogFile[Check Log File Existence]
-    CheckLogFile --> ArchiveLog{Is Archiving Needed?}
-    ArchiveLog -- Yes --> Archive(Archive Log) --> CheckRebootTime
-    ArchiveLog -- No --> CheckRebootTime{Check Last Reboot Time}
-    CheckRebootTime --> DaysComparison{Days >= DaysLimit?}
-    DaysComparison -- No --> End
-    DaysComparison -- Yes --> ReminderLoop[Enter Reminder Loop]
-    ReminderLoop --> CheckTime{Check Current Time}
-    CheckTime --> WithinWorkHours{Within Work Hours?}
-    WithinWorkHours -- No --> Wait[Wait for Reminder Interval] --> ReminderLoop
-    WithinWorkHours -- Yes --> ShowNotification{Show Toast Notification}
-    ShowNotification --> UserAction{User Action}
-    UserAction --> |Restart Now| EnforceReboot(Enforce Reboot)
-    UserAction --> |Dismiss| Wait --> ReminderLoop
-    EnforceReboot --> End
-```
+
 ## Usage
 The script accepts various parameters allowing for tailored execution to fit organizational needs.
 Here are some examples:
