@@ -9,7 +9,22 @@
 
 The script is intended for daily execution, typically using the Windows Task Scheduler, to monitor system uptime and ensure compliance with organizational reboot policies.
 ## FlowChart
-
+```mermaid
+graph TD
+    Start(Start: Script Execution) --> CheckWeekend{Is it Weekend?}
+    CheckWeekend -->|Yes| LogWeekend[Log: No action, Weekend]
+    CheckWeekend -->|No| LoadAssemblies[Load Necessary Assemblies]
+    LoadAssemblies --> CheckLogFile[Check/Create Log File]
+    CheckLogFile --> ArchiveLog{Check Log Size for Archiving}
+    ArchiveLog -->|Yes| Archive[Archive and Continue]
+    ArchiveLog -->|No| RebootCheck{Check Last Reboot Time}
+    RebootCheck -->|Within Limit| NotifyUser[Create and Show Balloon Notification]
+    NotifyUser --> PromptRestart[Create Restart Prompt]
+    PromptRestart --> EnforceReboot[Enforce System Reboot]
+    EnforceReboot --> CheckUserSession[Check Active User Session]
+    CheckUserSession --> FinalLog[Log Completion and Clean Up] --> End(End of Script)
+    RebootCheck -->|Beyond Limit| FinalLog
+```
 ```mermaid
 graph TD
     A[Start: Parameter Definition] --> B[Load Assemblies]
