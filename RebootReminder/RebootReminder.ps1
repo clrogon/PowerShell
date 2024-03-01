@@ -1,63 +1,51 @@
 <#
 .Synopsis
-   A PowerShell script designed to prompt users for a system reboot if their computer has not been rebooted within a specified number of days.
+   This PowerShell script enhances system maintenance protocols by utilizing modern toast notifications for prompting users regarding necessary system reboots. It provides an interactive and user-friendly reminder for system reboots based on specified intervals, ensuring timely updates and maintenance.
 
 .Description
-   Utilizes balloon notifications to gently remind users to reboot their computer after it has been on for a specified number of days without a restart. The script incorporates checks to avoid reminding users on weekends and enforces a system reboot if the computer is not rebooted within a certain timeframe after the reminder, ensuring system updates and maintenance routines are applied.
+   The script introduces an advanced notification system to encourage users to reboot their computers if the system has not been restarted within a specified number of days. It integrates toast notifications that allow direct interaction, including options for immediate action or dismissal, making the reminder process more engaging and effective. The script is designed to operate seamlessly across weekdays, with customizations for reminder intervals, work hours, and logging, ensuring minimal disruption to the user's workflow while maintaining system health.
 
 .Example
    .\RebootReminder.ps1 -DaysLimit 7
-   Executes the script with default settings, setting the reminder for 7 days since the last reboot with a 5-hour window before a forced reboot, and logs events to the user's profile directory.
+   This command initiates the script with toast notifications reminding the user to reboot after 7 days of uptime, improving upon traditional methods with a more interactive approach.
 
 .Example
    .\RebootReminder.ps1 -DaysLimit 7 -HoursLimit 4 -LogPath "C:\logs\RebootLog.log" -WorkStart 9 -WorkEnd 18
-   Specifies a 7-day limit before reminders start, a 4-hour window for forced reboots after the reminder, a custom log path, and active reminder hours between 9 AM and 6 PM.
+   Specifies a 7-day reboot reminder limit, a 4-hour grace period for action, custom log path, and active reminder hours, leveraging toast notifications for a comprehensive maintenance strategy.
 
 .Inputs
-   -DaysLimit  Specifies the number of days to check since the last reboot before sending a reminder.
-   -HoursLimit  Defines the number of hours to wait after the first reminder before enforcing a reboot (default is 5 hours).
-   -LogPath     Custom path for logging script activities (default is $env:USERPROFILE\RebootLog.log).
-   -WorkStart   Start hour in 24-hour format for when reminders can begin being sent.
-   -WorkEnd     End hour in 24-hour format for when reminders should stop being sent.
+   Parameters include DaysLimit, HoursLimit, LogPath, WorkStart, WorkEnd, with additional options for customizing the toast notification appearance and behavior, offering flexibility in maintenance planning.
 
 .Outputs
-   None. The script interacts directly with the user through notifications and potentially enforces a system reboot.
+   Direct user interaction through toast notifications, with logging of user actions and script operations for audit and review purposes.
 
 .Notes
-   Designed for deployment via Windows Task Scheduler for daily execution. Incorporates checks to skip reminders on weekends, robust error handling to log issues to a specified path, and ensures clean resource management for optimal script performance.
-   Version: 3.2
+   Optimized for deployment via task scheduling tools for regular execution, this script adapts to modern desktop environments by providing clear, actionable reminders directly within the user interface, facilitating proactive system maintenance.
+   Version: 4.0
    Author: Concept by Cláudio Gonçalves
    Last Updated: 07/02/2024
 #>
+# Define global parameters for script operation
 param (
-# Defines the threshold in days to trigger a reboot reminder. Default is 7 days.
     [Parameter(Mandatory=$false)]
     [ValidateRange(1,365)]
     [int]$DaysLimit = 7,
-# Defines the grace period in hours before a forced reboot after the reminder. Default is 5 hours.
     [Parameter(Mandatory=$false)]
     [ValidateRange(0,24)]
     [int]$HoursLimit = 5,
-# Sets the path for the log file where script activities are recorded. Default is RebootLog.log in the user's profile directory.
     [Parameter(Mandatory=$false)]
     [string]$LogPath = $(if (Test-Path "$env:USERPROFILE\RebootLog.log") { "$env:USERPROFILE\RebootLog.log" } else { "$env:TEMP\RebootLog.log" }),
-# Specifies the start of the workday for reminder display. Default is 8 AM.
     [Parameter(Mandatory=$false)]
     [ValidateRange(0,23)]
     [int]$WorkStart = 8,
-# Specifies the end of the workday for reminder display. Default is 5 PM (17 in 24-hour format).
     [Parameter(Mandatory=$false)]
     [ValidateRange(0,23)]
     [int]$WorkEnd = 17,
-# Duration in milliseconds for displaying the balloon tip notification. Default is 10000 ms (10 seconds).
-    [int]$BalloonTipDisplayTime = 10000,
-# Interval in seconds between subsequent reminder notifications. Default is 1800 seconds (30 minutes).
     [int]$ReminderIntervalSeconds = 1800,
-# Used in the reminder notification to inform users of the reminder frequency. Default is 30 minutes.
     [int]$ReminderIntervalMinutes = 30
 )
 
-# Load necessary assemblies for creating UI components and dialog boxes.
+# Load necessary assemblies for the Show-ToastNotification function
 Try {
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -AssemblyName Microsoft.VisualBasic
@@ -71,6 +59,7 @@ Catch {
     Exit
 }
 
+#Check if the Log file exist
 if (-not (Test-Path $LogPath)) {
     New-Item -Path $LogPath -ItemType File -Force | Out-Null
 }
@@ -83,49 +72,121 @@ if ($LogFile.Length -gt $LogFileSizeLimit) {
     Move-Item $LogPath $ArchivePath -Force
 }
 
-# Function to check the last time the computer has been rebooted
+# Function definitions for Set-Action, Show-ToastNotification, and Cleanup-Registry
+function Set-Action {
+    param(
+        [string]$ActionName,
+        [string]$ScriptContent
+    )
+    
+    Try {
+        $ScriptPath = "C:\Windows\Temp\$ActionName.cmd"
+        $LogScriptContent = @"
+echo %DATE% %TIME% - $ActionName button clicked >> "$LogPath"
+$ScriptContent
+"@
+
+        $MainRegPath = "HKCU:\SOFTWARE\Classes\$ActionName"
+        $CommandPath = "$MainRegPath\shell\open\command"
+
+        # Create and write the restart script with logging
+        New-Item -Path $ScriptPath -Force | Out-Null
+        Set-Content -Path $ScriptPath -Value $LogScriptContent -Force
+
+        # Create registry entries for the custom protocol
+        New-Item -Path $CommandPath -Force | Out-Null
+        New-ItemProperty -Path $MainRegPath -Name "URL Protocol" -Value "" -PropertyType String -Force | Out-Null
+        Set-ItemProperty -Path $MainRegPath -Name "(Default)" -Value "URL:$ActionName Protocol" -Force | Out-Null
+        Set-ItemProperty -Path $CommandPath -Name "(Default)" -Value "`"$ScriptPath`"" -Force | Out-Null
+    }
+    Catch {
+        $ErrorMessage = $_.Exception.Message
+        Add-Content -Path $LogPath -Value "$(Get-Date) - Error encountered during [Operation]: $ErrorMessage"
+    }
+}
+
+function Show-ToastNotification {
+    param(
+    [Parameter(Mandatory=$false)]
+    [string]$Icon = "DefaultIconPath",
+    [Parameter(Mandatory=$false)]
+    [string]$Hero = "DefaultHeroImagePath",
+    [Parameter(Mandatory=$false)]
+    [string]$Title = "Default Title",
+    [Parameter(Mandatory=$false)]
+    [string]$Text1 = "Default text 1",
+    [Parameter(Mandatory=$false)]
+    [string]$Text2 = "Default text 2"
+    )
+
+    $ToastImageAndText04 = [Windows.UI.Notifications.ToastTemplateType, Windows.UI.Notifications, ContentType = WindowsRuntime]::ToastImageAndText04
+    $ToastImageAndText04XML = [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]::GetTemplateContent($ToastImageAndText04)
+
+    # Customize notification content
+    $ToastImageAndText04XML.SelectSingleNode('//text[@id="1"]').InnerText = $Title
+    $ToastImageAndText04XML.SelectSingleNode('//text[@id="2"]').InnerText = $Text1
+    $ToastImageAndText04XML.SelectSingleNode('//text[@id="3"]').InnerText = $Text2
+    $ToastImageAndText04XML.SelectSingleNode('//image[@id="1"]').SetAttribute('src', $Icon)
+    $ToastImageAndText04XML.SelectSingleNode('//image[@id="1"]').SetAttribute('hint-crop', 'none')
+    $ToastImageAndText04XML.SelectSingleNode('//image[@id="1"]').SetAttribute('placement', 'appLogoOverride')
+
+    # Add actions and buttons
+    $Actions = $ToastImageAndText04XML.SelectSingleNode('//toast').AppendChild($ToastImageAndText04XML.CreateElement("actions"))
+
+    # "Restart now" and "Dismiss" button setup
+    $RestartButton = $ToastImageAndText04XML.CreateElement("action")
+    $RestartButton.SetAttribute('content', 'Restart now')
+    $RestartButton.SetAttribute('activationType', 'protocol')
+    $RestartButton.SetAttribute('arguments', 'RestartNow:')
+    $DismissButton = $ToastImageAndText04XML.CreateElement("action")
+    $DismissButton.SetAttribute('content', 'Dismiss')
+    $DismissButton.SetAttribute('activationType', 'system')
+    $DismissButton.SetAttribute('arguments', 'dismiss')
+
+    # Append buttons
+    $Actions.AppendChild($RestartButton) | Out-Null
+    $Actions.AppendChild($DismissButton) | Out-Null
+
+    # Hero image setup
+    $HeroImage = $ToastImageAndText04XML.CreateElement("image")
+    $HeroImage.SetAttribute('placement', 'hero')
+    $HeroImage.SetAttribute('src', $Hero)
+    $ToastImageAndText04XML.SelectSingleNode('//binding').AppendChild($HeroImage) | Out-Null
+
+    # Switch to ToastGeneric template for hero image
+    $ToastImageAndText04XML.SelectSingleNode('//binding').SetAttribute('template', 'ToastGeneric')
+
+    # App ID retrieval for toast notifier
+    $AppId = (Get-StartApps | Where-Object { $_.Name -eq "Windows PowerShell" } | Select-Object -First 1).AppID
+
+    # Set up the "RestartNow" action
+    $RestartScriptContent = "Shutdown /g /t 300 /f"
+    Set-Action -ActionName "RestartNow" -ScriptContent $RestartScriptContent
+
+    # Show the notification
+    $ToastNotification = [Windows.UI.Notifications.ToastNotification]::new($ToastImageAndText04XML)
+    [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($AppId).Show($ToastNotification)
+}
+
+function Cleanup-Registry {
+    param(
+        [string]$ActionName
+    )
+
+    $MainRegPath = "HKCU:\SOFTWARE\Classes\$ActionName"
+    $ScriptPath = "C:\Windows\Temp\$ActionName.cmd"
+
+    # Remove the registry entries and script
+    Remove-Item -Path $MainRegPath -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path $ScriptPath -Force -ErrorAction SilentlyContinue
+}
+
+# Helper functions from Reboot Reminder script
 Function Check-RebootTime {
     $OS = Get-CimInstance -ClassName "Win32_OperatingSystem"
     $LastBoot = $OS.LastBootUpTime
     $Days = ((Get-Date) - $LastBoot).Days
     Return $Days
-}
-
-# Function to create a balloon notification
-Function Create-BalloonNotification ($Text, $Title) {
-    $Balloon = New-Object System.Windows.Forms.NotifyIcon
-    $Balloon.BalloonTipIcon = "Warning"
-    $Balloon.BalloonTipText = $Text
-    $Balloon.BalloonTipTitle = $Title
-    $Balloon.Icon = [System.Drawing.SystemIcons]::Information
-    $Balloon.Visible = $true
-    $Balloon.ShowBalloonTip($BalloonTipDisplayTime)
-    Return $Balloon
-}
-
-# Function to dispose of balloon notification
-Function Dispose-BalloonNotification {
-    param(
-        [Parameter(Mandatory = $true)]
-        [System.Windows.Forms.NotifyIcon]$Balloon
-    )
-    if ($Balloon -ne $null) {
-        Start-Sleep -Seconds 2
-        $Balloon.Visible = $false
-        $Balloon.Dispose()
-    }
-}
-
-# Function to create a restart prompt with the option for the user to postpone the reboot
-Function Create-RestartPrompt {
-    $Result = [Microsoft.VisualBasic.Interaction]::MsgBox('Would you like to reboot your computer now?', 'YesNo,MsgBoxSetForeground,Question', 'System Maintenance')
-    if ($Result -ieq "Yes") {
-        Shutdown /g /t 0 /f
-    }
-    else {
-        return $true
-    }
-    return $false
 }
 
 # Function to enforce a system reboot
@@ -160,53 +221,68 @@ function Is-Weekend {
     return $today -ieq 'Saturday' -or $today -ieq 'Sunday'
 }
 
-# Main execution block
+# Main execution block adapted to use Show-ToastNotification
 Try {
+    # Log script start
     Add-Content -Path $LogPath -Value "$(Get-Date) - Script execution started."
-    
+
     if (-not (Is-Weekend)) {
         $Days = Check-RebootTime
         if ($Days -ge $DaysLimit) {
             $TimeStart = Get-Date
             $TimeEnd = $TimeStart.AddHours($HoursLimit)
-            
-            do {
+
+            while ($TimeNow -lt $TimeEnd) {
                 $TimeNow = Get-Date
-                $timeRemaining = $TimeEnd - $TimeNow
 
-                # Extract hours and minutes from the time remaining
-                $hoursRemaining = [Math]::Floor($timeRemaining.TotalHours)
-                $minutesRemaining = $timeRemaining.Minutes
-                $Text = "This computer hasn't rebooted for at least $DaysLimit days. You have a grace period of $hoursRemaining hours and $minutesRemaining minutes. This alert will appear every $ReminderIntervalMinutes minutes until the computer is rebooted. Please save your work."
-
+                # Check if the current time exceeds the end time and enforce reboot
                 if ($TimeNow -ge $TimeEnd) {
                     Add-Content -Path $LogPath -Value "$(Get-Date) - Time limit for reboot reached. Enforcing reboot now."
                     Enforce-Reboot
-                    break
-                }
-                
-                if ($TimeNow.Hour -ge $WorkStart -and $TimeNow.Hour -lt $WorkEnd) {
-                    $Balloon = Create-BalloonNotification -Text $Text -Title "Notice: Pending Reboot Needed"
-                    Start-Sleep -Seconds $ReminderIntervalSeconds
-                    Dispose-BalloonNotification -Balloon $Balloon
-                    Add-Content -Path $LogPath -Value "$(Get-Date) - Reminder sent: System has not been rebooted for $Days days. Reminder will continue every $ReminderIntervalMinutes minutes until reboot."
-                } 
-                else {
-                    # Log attempt outside of work hours
-                    Add-Content -Path $LogPath -Value "$(Get-Date) - Reminder attempt outside work hours ($WorkStart to $WorkEnd) was skipped."
+                    break # Exit the loop after enforcing reboot
                 }
 
-                Start-Sleep -Seconds $ReminderIntervalSeconds
-            } While ($TimeNow -lt $TimeEnd)
+                # Extract hours and minutes from the time remaining
+                $timeRemaining = $TimeEnd - $TimeNow
+                $hoursRemaining = [Math]::Floor($timeRemaining.TotalHours)
+                $minutesRemaining = $timeRemaining.Minutes
+
+                # Prepare notification parameters
+                $Icon = "C:\TSTFolder\logo.png"
+                $Hero = "C:\TSTFolder\reboot.gif"
+                $Title = "Notice: Pending Reboot Needed"
+                $Text1 = "This computer hasn't rebooted for at least $DaysLimit days."
+                $Text2 = "Please save your work and restart now or dismiss this reminder."
+
+                if ($TimeNow.Hour -ge $WorkStart -and $TimeNow.Hour -lt $WorkEnd) {
+                    $loopStartTime = Get-Date
+                    Add-Content -Path $LogPath -Value "$(Get-Date) - Reminder sent: System has not been rebooted for $Days days. Reminder will continue every $ReminderIntervalMinutes minutes until reboot."
+                    Show-ToastNotification -Icon $Icon -Hero $Hero -Title $Title -Text1 $Text1 -Text2 $Text2
+                    
+                    $loopEndTime = Get-Date
+                    $elapsedTime = $loopEndTime - $loopStartTime
+                    $sleepDuration = $ReminderIntervalSeconds - $elapsedTime.TotalSeconds
+                    
+                    if ($sleepDuration -gt 0) {
+                        Start-Sleep -Seconds $sleepDuration
+                    }
+
+                    Add-Content -Path $LogPath -Value "$(Get-Date) - Reminder sent. Next reminder in approximately $ReminderIntervalSeconds seconds."
+                } else {
+                    Add-Content -Path $LogPath -Value "$(Get-Date) - Outside of work hours. No reminder sent."
+                    Start-Sleep -Seconds $ReminderIntervalSeconds
+                }
+                $TimeNow = Get-Date
+            }
         }
         Add-Content -Path $LogPath -Value "$(Get-Date) - Script execution completed."
     } else {
-        Add-Content -Path $LogPath -Value "$(Get-Date) - No reminder sent: Today is a weekend."
-        Exit
+        Add-Content -Path $LogPath -Value "$(Get-Date) - Today is a weekend. No operation performed."
     }
 }
 
 Catch {
+    # Error handling remains largely the same
     $ErrorMessage = $_.Exception.Message
     $ErrorTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $ErrorCode = $_.Exception.HResult
@@ -216,9 +292,9 @@ Catch {
 }
 
 Finally {
-    if ($Balloon -is [System.Windows.Forms.NotifyIcon]) {
-        $Balloon.Dispose()
-    } else {
-        Write-Warning "The balloon notification variable did not contain a valid NotifyIcon instance."
-    }
+    # Clean up any resources if necessary
+    Add-Content -Path $LogPath -Value "$(Get-Date) - Clean up resources."
+    #Cleanup-Registry
+    # Cleanup-Registry could be called here based on specific conditions or user actions
+    Write-Warning "The balloon notification variable did not contain a valid NotifyIcon instance."
 }
