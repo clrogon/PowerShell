@@ -30,9 +30,9 @@ This runs the script with the predefined parameters.
 Contributions are welcomed and appreciated. If you have improvements or bug fixes, please follow these steps:
 
 ## Fork the repository.
-1.Create a new branch for your changes.
-2.Develop and test your changes.
-3.Submit a pull request with a detailed description of your contribution.
+1. Create a new branch for your changes.
+2. Develop and test your changes.
+3. Submit a pull request with a detailed description of your contribution.
 ## FAQ / Troubleshooting
 Q: What if the script doesn't execute on a remote computer?
 A: Ensure you have administrative access to the remote machine and that the machine is reachable over the network.
