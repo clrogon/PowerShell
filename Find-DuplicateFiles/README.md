@@ -27,27 +27,20 @@ The script can be run using either default parameters or custom values to tailor
 This will run the script with all the default parameters.
 
 ### Using custom values:
-
 ```powershell
 ./Find-DuplicateFiles.ps1 -targetDir "C:\MyFolder" -hashAlgorithm "SHA256" -exportPath "C:\MyExports\duplicates.csv" -logPath "C:\MyLogs\log.txt" -userConfirm "Delete"
 ```
-
 This example runs the script targeting the "C:\MyFolder" directory, using the SHA256 algorithm, exporting duplicates to a custom CSV location, logging to a custom location, and deleting duplicates upon user confirmation.
-
 ## Choosing a Hash Algorithm
 - MD5 is fast but less secure, suitable for general use.
 - SHA1 offers a balance between speed and security.
 - SHA256 provides high security but is slower. Recommended for sensitive data.
-- 
 ## Contributing
 Your contributions make this tool better. If you've found a bug or have an enhancement in mind, feel free to fork the repo, make changes, and submit a pull request.
-
 ## FAQ / Troubleshooting
 - Script doesn't start? Ensure you're running PowerShell with administrative privileges.
 - Hashing takes too long? Consider using a faster hash algorithm or exclude large, irrelevant directories.
-- 
 ## License
 This script is shared under the MIT License, allowing free use, modification, and distribution.
-
 ## Author
 Concept and development by Claudio Gonçalves.
