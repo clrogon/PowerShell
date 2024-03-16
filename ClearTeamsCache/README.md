@@ -1,1 +1,30 @@
-IyBDbGVhclRlYW1zQ2FjaGUgUG93ZXJTaGVsbCBTY3JpcHQKCiMjIERlc2NyaXB0aW9uCl9DbGVhclRlYW1zQ2FjaGUucHMxXyBpcyBhIFBvd2VyU2hlbGwgc2NyaXB0IGRlc2lnbmVkIHRvIGNsZWFyIHRoZSBNaWNyb3NvZnQgVGVhbXMgY2FjaGUgYW5kIHJlc3RhcnQgdGhlIGFwcGxpY2F0aW9uLiBUaGUgc2NyaXB0IGFpbXMgdG8gaW1wcm92ZSBNaWNyb3NvZnQgVGVhbXMgcGVyZm9ybWFuY2UgYnkgcmVtb3Zpbmcgc3BlY2lmaWMgY2FjaGUgZm9sZGVycy4gSXQgYWxzbyBwZXJmb3JtcyBjaGVja3MgZm9yIGFkbWluaXN0cmF0aXZlIHJpZ2h0cywgZGlzayBzcGFjZSwgYW5kIG5ldHdvcmsgY29ubmVjdGl2aXR5LCBhbmQgbG9ncyB0aGVzZSBldmVudHMuCgpUaGlzIHNjcmlwdCBjYW4gYmUgcnVuIG1hbnVhbGx5IG9yIHNjaGVkdWxlZCB0byBydW4gYXV0b21hdGljYWxseSwgZGVwZW5kaW5nIG9uIHRoZSBvcmdhbml6YXRpb24ncyBuZWVkcy5cblxuIyMgVXNhZ2UKWW91IGNhbiBydW4gdGhlIHNjcmlwdCB3aXRoIGN1c3RvbSBwYXJhbWV0ZXJzIG9yIHdpdGggZGVmYXVsdCB2YWx1ZXMuIEhlcmUgYXJlIHNvbWUgZXhhbXBsZXM6XG4tIGxvZ0ZvbGRlcjogT3B0aW9uYWwgcGFyYW1ldGVyLiBTcGVjaWZpZXMgdGhlIGZvbGRlciB3aGVyZSBsb2dzIHdpbGwgYmUgc2F2ZWQuIERlZmF1bHQgaXMgQzpcXFRTVGZvbGRlclxcTG9ncy5cbi0gRm9yY2U6IE9wdGlvbmFsIHN3aXRjaC4gRm9yY2VzIHRoZSBzY3JpcHQgdG8gY29udGludWUgZXZlbiBpZiBpdCBlbmNvdW50ZXJzIGlzc3Vlcy5cblxuIyMjIFVzaW5nIGRlZmF1bHQgdmFsdWVzOlxuYGBgcG93ZXJzaGVsbFxuLi9DbGVhclRlYW1zQ2FjaGUucHMxXG5gYGBgXG5UaGlzIHdpbGwgcnVuIHRoZSBzY3JpcHQgd2l0aCB0aGUgZGVmYXVsdCBsb2cgZm9sZGVyIGxvY2F0ZWQgYXQgQzpcXFRTVGZvbGRlclxcTG9ncy5cblxuIyMjIFVzaW5nIGN1c3RvbSB2YWx1ZXM6XG5gYGBgcG93ZXJzaGVsbFxuLi9DbGVhclRlYW1zQ2FjaGUucHMxIC1sb2dGb2xkZXIgXCJDOlxcQ3VzdG9tTG9nc1wiIC1Gb3JjZVxuYGBgXG5UaGlzIHdpbGwgcnVuIHRoZSBzY3JpcHQgd2l0aCBhIGN1c3RvbSBsb2cgZm9sZGVyIGFuZCB3aWxsIGZvcmNlIHRoZSBzY3JpcHQgdG8gcHJvY2VlZCBldmVuIGlmIGl0IGVuY291bnRlcnMgaXNzdWVzIGxpa2UgbG93IGRpc2sgc3BhY2Ugb3IgbGFjayBvZiBuZXR3b3JrIGNvbm5lY3Rpdml0eS5cblxuIyMgQXV0aG9yXG5Db25jZXB0IGFuZCBkZXZlbG9wbWVudCBieSBDbGF1ZGlvIEdvbmNhbHZlcy5cbiJ9
+# ClearTeamsCache PowerShell Script
+
+## Description
+ClearTeamsCache.ps1 is a PowerShell script designed to clear the Microsoft Teams cache and restart the application. The script aims to improve Microsoft Teams performance by removing specific cache folders. It also performs checks for administrative rights, disk space, and network connectivity, and logs these events.
+
+This script can be run manually or scheduled to run automatically, depending on the organization's needs.
+
+## Usage
+You can run the script with custom parameters or with default values. Here are some examples:
+- `-logFolder`: Optional parameter. Specifies the folder where logs will be saved. Default is `C:\TSTFolder\Logs`.
+- `-Force`: Optional switch. Forces the script to continue even if it encounters issues.
+
+### Using default values:
+
+```powershell
+./ClearTeamsCache.ps1
+```
+
+This will run the script with the default log folder located at `C:\TSTFolder\Logs`.
+
+### Using custom values:
+
+```powershell
+./ClearTeamsCache.ps1 -logFolder "C:\CustomLogs" -Force
+```
+
+This will run the script with a custom log folder and will force the script to proceed even if it encounters issues like low disk space or lack of network connectivity.
+
+## Author
+Concept and development by Claudio Gonçalves.
