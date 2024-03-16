@@ -32,9 +32,9 @@ We welcome contributions to this script. If you have suggestions for improvement
 ## FAQ / Troubleshooting
 If you encounter any issues while using this script, please check the following:
 
-. Ensure you have administrative rights when running the script.
-. Confirm there is enough disk space available for the script to execute properly.
-. Check your network connectivity if the script depends on internet access.
+- Ensure you have administrative rights when running the script.
+- Confirm there is enough disk space available for the script to execute properly.
+- Check your network connectivity if the script depends on internet access.
 
 ## Author
 Concept and development by Claudio Gonçalves.
