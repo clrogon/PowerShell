@@ -23,6 +23,13 @@ Find-EmptyFolders -FolderPath 'C:\TestDirectory' -LogFile 'C:\Logs\Errors.log' -
 ```
 This will scan the C:\TestDirectory directory for empty folders, log any errors to 'C:\Logs\Errors.log', log empty directories to 'C:\Logs\Empty.log', and set the verbosity level to 'Verbose'.
 
+## Contributing
+We welcome contributions! If you have suggestions or find bugs, please feel free to fork the repo, make your changes, and submit a pull request.
+
+## FAQ / Troubleshooting
+Q: The script doesn't find any empty folders, but I know they exist. What's wrong?
+A: Ensure the path is correctly specified and that you have sufficient permissions to read all directories.
+
 ## Author
 Script curated by Cláudio Gonçalves
 
