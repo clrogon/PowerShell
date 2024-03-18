@@ -65,5 +65,10 @@ Please note, you need to run the PowerShell command prompt as an administrator t
 - LogPath: Optional parameter. The path for the log file. Default is C:\temp\RebootLog.log.
 - WorkStart: Optional parameter. The start of the workday in 24-hour format. Default is 8.
 - WorkEnd: Optional parameter. The end of the workday in 24-hour format. Default is 17.
+## FAQ / Troubleshooting
+- Q: What if the script doesn't prompt for a reboot?
+- A: Ensure the script's execution policy allows it to run and that it's scheduled correctly in the Task Scheduler.
+## Contributing
+We welcome contributions! If you've identified bugs, have enhancements, or want to suggest improvements, feel free to fork the repository, make your changes, and submit a pull request.
 ## Author
 Concept by Cláudio Gonçalves
