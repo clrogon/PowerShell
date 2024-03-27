@@ -15,20 +15,21 @@ The script is ideal for deployment in scenarios requiring immediate user attenti
 The script accepts various parameters for customization and flexibility. Here are some examples:
 
 **Basic Usage with Default Template:**
-
 ```powershell
 ./Show-Notification.ps1 -ToastTitle "Reminder" -ToastText "Time for a coffee break!"
 ```
-## Using Custom Values and Interactive Buttons:
-Define a hashtable for buttons as actions:
+## Advanced Usage Examples
+
+### Interactive Notification with Response Input
+This example demonstrates how to create a notification with an input field, allowing users to directly respond within the notification. This can be particularly useful for quick feedback or data entry scenarios.
 ```powershell
 $buttons = @{
-    "Snooze" = "snoozeAction";
-    "Dismiss" = "dismissAction"
+    "Submit" = "submitAction"
 }
-./Show-Notification.ps1 -ToastTitle "Meeting Alert" -ToastText "Your meeting starts in 10 minutes." -Buttons $buttons
+./Show-Notification.ps1 -ToastTitle "Quick Survey" -ToastText "How do you rate our service? (1-5)" -Buttons $buttons -TemplateType "ToastImageAndText02"
 ```
 This will display a notification with "Snooze" and "Dismiss" buttons, providing users with options to interact with the alert.
+
 ## Scheduling the Script with Task Scheduler
 Automate notification delivery by scheduling this script via the Task Scheduler:
 ```powershell
