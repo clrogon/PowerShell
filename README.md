@@ -42,7 +42,7 @@ Each script in this repository is designed for standalone use, tailored to speci
 We warmly welcome contributions to enrich this repository. If you've developed a script that can benefit the system administration community, please share it with us through a pull request. We ask that your submissions include comprehensive documentation, covering usage, setup, and any prerequisites, to assist others in seamlessly integrating your solutions.
 ## Multilingual Support
 This repository's documentation is available in the following languages:
-- [Português Europeu](./README_pt-PT.md)
+- [Português Europeu](docs/pt-PT/README_pt-PT.md)
 
 ## Author Note
 > [!NOTE]
