@@ -1,6 +1,6 @@
 # Show-Notification PowerShell Script
 ## Description
-**Show-Notification.ps1** is a versatile PowerShell script designed to create and display customizable Windows toast notifications. This script enables IT professionals and system administrators to send targeted alerts, reminders, and interactive notifications directly from PowerShell scripts, enhancing user engagement and system interaction on Windows-based systems. Its flexible design supports various notification templates, including options for images, interactive buttons, and specified expiration times.
+**Show-Notification.ps1** is part of a collection of PowerShell scripts designed to enhance system interaction and user engagement on Windows-based systems. While there are many scripts available for creating Windows toast notifications, this script is not about being the best in every scenario but about fitting specific use cases, particularly those encountered in my workflow. It provides a flexible way to create and display customizable toast notifications, including options for images, interactive buttons, expiration times, and more.
 
 ## Features
 - **Customizable Notification Templates**: Choose from several notification templates to best suit the message content.
