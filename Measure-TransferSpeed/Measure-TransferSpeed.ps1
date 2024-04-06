@@ -1,3 +1,27 @@
+<#
+.Synopsis
+   This PowerShell script measures transfer speeds between servers and logs performance metrics for analysis and troubleshooting purposes.
+
+.Description
+   The script facilitates performance measurement between two specified servers by transferring a test file multiple times and recording duration and speed metrics for each iteration. It provides detailed logs for both performance measurement and script execution, enhancing visibility into network and storage performance.
+
+.Example
+   .\Measure-TransferSpeed.ps1 -SourceServer "ABC" -DestinationServer "XYZ" -FileSizeMB 100 -Iterations 5 -MeasurementLogFilePath "MeasurementLog.txt" -ExecutionLogFilePath "ExecutionLog.txt"
+   Initiates transfer speed measurement between servers "ABC" and "XYZ" using a 100 MB test file for 5 iterations. Logs performance metrics to "MeasurementLog.txt" and script execution details to "ExecutionLog.txt".
+
+.Inputs
+   Parameters include SourceServer, DestinationServer, FileSizeMB, Iterations, MeasurementLogFilePath, and ExecutionLogFilePath. Additional options for ExportResults and CloudEnabled provide flexibility in result handling and cloud integration.
+
+.Outputs
+   Detailed logs for performance measurement and script execution, facilitating analysis and troubleshooting of transfer speed issues.
+
+.Notes
+   This script is designed for system administrators and network engineers to monitor and optimize transfer speeds between servers. It supports both local and remote execution scenarios, enabling comprehensive performance testing in various environments.
+   Version: 1.0
+   Author: [Your Name]
+   Last Updated: [Date]
+#>
+
 function Measure-TransferSpeed {
     param (
         [string]$SourceServer,                 # Source server name or IP address
