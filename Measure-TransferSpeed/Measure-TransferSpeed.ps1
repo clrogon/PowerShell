@@ -19,7 +19,7 @@
    This script is designed for system administrators and network engineers to monitor and optimize transfer speeds between servers. It supports both local and remote execution scenarios, enabling comprehensive performance testing in various environments.
    Version: 1.0
    Author: Cláudio Gonçalves
-   Last Updated: 06/04/2024
+   Last Updated: April 06, 2024
 #>
 
 function Measure-TransferSpeed {
@@ -27,7 +27,7 @@ function Measure-TransferSpeed {
         [string]$SourceServer,                 # Source server name or IP address
         [string]$DestinationServer,           # Destination server name or IP address
         [int]$FileSizeMB,                     # Size of the file to transfer in megabytes
-        [int]$Iterations = 1,                 # Number of iterations to perform the transfer
+        [int]$Iterations = 1,                 # Number of iterations to perform the transfer (multiple attempts for accuracy)
         [switch]$CloudEnabled,                # Indicates if cloud features are enabled (not currently used)
         [string]$MeasurementLogFilePath,     # Path to the performance measurement log file
         [string]$ExecutionLogFilePath        # Path to the execution log file
