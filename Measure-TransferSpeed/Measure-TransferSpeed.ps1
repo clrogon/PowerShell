@@ -18,8 +18,8 @@
 .Notes
    This script is designed for system administrators and network engineers to monitor and optimize transfer speeds between servers. It supports both local and remote execution scenarios, enabling comprehensive performance testing in various environments.
    Version: 1.0
-   Author: [Your Name]
-   Last Updated: [Date]
+   Author: Cláudio Gonçalves
+   Last Updated: 06/04/2024
 #>
 
 function Measure-TransferSpeed {
