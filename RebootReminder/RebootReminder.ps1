@@ -1,30 +1,25 @@
 <#
 .Synopsis
    This PowerShell script enhances system maintenance protocols by utilizing modern toast notifications for prompting users regarding necessary system reboots. It provides an interactive and user-friendly reminder for system reboots based on specified intervals, ensuring timely updates and maintenance.
-
 .Description
    The script introduces an advanced notification system to encourage users to reboot their computers if the system has not been restarted within a specified number of days. It integrates toast notifications that allow direct interaction, including options for immediate action or dismissal, making the reminder process more engaging and effective. The script is designed to operate seamlessly across weekdays, with customizations for reminder intervals, work hours, and logging, ensuring minimal disruption to the user's workflow while maintaining system health.
-
 .Example
    .\RebootReminder.ps1 -DaysLimit 7
    This command initiates the script with toast notifications reminding the user to reboot after 7 days of uptime, improving upon traditional methods with a more interactive approach.
-
 .Example
    .\RebootReminder.ps1 -DaysLimit 7 -HoursLimit 4 -LogPath "C:\logs\RebootLog.log" -WorkStart 9 -WorkEnd 18
    Specifies a 7-day reboot reminder limit, a 4-hour grace period for action, custom log path, and active reminder hours, leveraging toast notifications for a comprehensive maintenance strategy.
-
 .Inputs
    Parameters include DaysLimit, HoursLimit, LogPath, WorkStart, WorkEnd, with additional options for customizing the toast notification appearance and behavior, offering flexibility in maintenance planning.
-
 .Outputs
    Direct user interaction through toast notifications, with logging of user actions and script operations for audit and review purposes.
-
 .Notes
    Optimized for deployment via task scheduling tools for regular execution, this script adapts to modern desktop environments by providing clear, actionable reminders directly within the user interface, facilitating proactive system maintenance.
-   Version: 4.0
+   Version: 5.0
    Author: Concept by Cláudio Gonçalves
-   Last Updated: 07/02/2024
+   Last Updated: 09/04/2024
 #>
+
 # Define global parameters for script operation
 param (
     [Parameter(Mandatory=$false)]
@@ -45,42 +40,47 @@ param (
     [int]$ReminderIntervalMinutes = 30
 )
 
-# Load necessary assemblies for the Show-ToastNotification function
-Try {
-    Add-Type -AssemblyName System.Windows.Forms
-    Add-Type -AssemblyName Microsoft.VisualBasic
-}
-
-Catch {
-    $ErrorTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $LogMessage = "$(Get-Date) - Failed to load necessary assemblies for UI components. Check System.Windows.Forms and Microsoft.VisualBasic availability."
-    Add-Content -Path $LogPath -Value $LogMessage
-    Write-Error $LogMessage
-    Exit
-}
-
-#Check if the Log file exist
+# Check if the Log file exist
 if (-not (Test-Path $LogPath)) {
-    New-Item -Path $LogPath -ItemType File -Force | Out-Null
+    try {
+        New-Item -Path $LogPath -ItemType File -Force | Out-Null
+        Write-Host "Log file created successfully."
+    } catch {
+        Write-Error "Failed to create log file: $_"
+        Exit
+    }
 }
 
 # Before logging, check the size of the log file and archive if necessary
 $LogFileSizeLimit = 10MB
 $LogFile = Get-Item $LogPath
 if ($LogFile.Length -gt $LogFileSizeLimit) {
-    $ArchivePath = "$LogPath.old"
-    Move-Item $LogPath $ArchivePath -Force
+    try {
+        $ArchivePath = "$LogPath.old"
+        Move-Item $LogPath $ArchivePath -Force
+        Write-Host "Log file archived successfully."
+    } catch {
+        Write-Error "Failed to archive log file: $_"
+        Exit
+    }
 }
 
-# Function definitions for Set-Action, Show-ToastNotification, and Cleanup-Registry
+# This function sets up the action to be taken when a specific button in the toast notification is clicked.
 function Set-Action {
     param(
         [string]$ActionName,
         [string]$ScriptContent
     )
     
+    # Validate the ActionName to prevent issues with file names and registry keys
+    if ($ActionName -notmatch '^[\w\d-]+$') {
+        Write-Error "Invalid ActionName. Only alphanumeric characters and dashes are allowed."
+        return
+    }
+
     Try {
-        $ScriptPath = "C:\Windows\Temp\$ActionName.cmd"
+        # Use the environment variable for the temporary directory
+        $ScriptPath = "$env:TEMP\$ActionName.cmd"
         $LogScriptContent = @"
 echo %DATE% %TIME% - $ActionName button clicked >> "$LogPath"
 $ScriptContent
@@ -100,75 +100,138 @@ $ScriptContent
         Set-ItemProperty -Path $CommandPath -Name "(Default)" -Value "`"$ScriptPath`"" -Force | Out-Null
     }
     Catch {
+        # Error handling remains largely the same
         $ErrorMessage = $_.Exception.Message
-        Add-Content -Path $LogPath -Value "$(Get-Date) - Error encountered during [Operation]: $ErrorMessage"
+        $ErrorTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        $ErrorCode = $_.Exception.HResult
+        $ErrorStackTrace = $_.Exception.StackTrace
+        $LogMessage = "$ErrorTime - Error encountered: $ErrorMessage (Code: $ErrorCode). StackTrace: $ErrorStackTrace"
+        Add-Content -Path $LogPath -Value $LogMessage
     }
 }
 
+# Set up the "RestartNow" action
+$RestartScriptContent = "Shutdown /g /t 0 /f"
+Set-Action -ActionName "RestartNow" -ScriptContent $RestartScriptContent
+
+# Set up the "DismissOrSnooze" action
+$DismissOrSnoozeScriptContent = "echo Dismiss or Snooze button clicked"
+Set-Action -ActionName "DismissOrSnooze" -ScriptContent $DismissOrSnoozeScriptContent
+
+# Function to show a toast notification with "Restart now" and "Dismiss or Snooze" buttons
 function Show-ToastNotification {
-    param(
-    [Parameter(Mandatory=$false)]
-    [string]$Icon = "DefaultIconPath",
-    [Parameter(Mandatory=$false)]
-    [string]$Hero = "DefaultHeroImagePath",
-    [Parameter(Mandatory=$false)]
-    [string]$Title = "Default Title",
-    [Parameter(Mandatory=$false)]
-    [string]$Text1 = "Default text 1",
-    [Parameter(Mandatory=$false)]
-    [string]$Text2 = "Default text 2"
+    param (
+        [string]$Headline,
+        [string]$Body,
+        [string]$LogoPath,
+        [string]$ImagePath
     )
 
-    $ToastImageAndText04 = [Windows.UI.Notifications.ToastTemplateType, Windows.UI.Notifications, ContentType = WindowsRuntime]::ToastImageAndText04
-    $ToastImageAndText04XML = [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]::GetTemplateContent($ToastImageAndText04)
+    try {
+        $xml = @"
+<toast>
+    <visual>
+        <binding template="ToastGeneric">
+            <text>$Headline</text>
+            <text>$Body</text>
+            <image placement="appLogoOverride" src="$LogoPath"/>
+            <image placement="hero" src="$ImagePath"/>
+        </binding>
+    </visual>
+    <actions>
+        <action
+            content="Restart now"
+            activationType="protocol"
+            arguments="RestartNow:" />
+        <action
+            content="Dismiss or Snooze"
+            activationType="protocol"
+            arguments="DismissOrSnooze:" />
+    </actions>
+</toast>
+"@
 
-    # Customize notification content
-    $ToastImageAndText04XML.SelectSingleNode('//text[@id="1"]').InnerText = $Title
-    $ToastImageAndText04XML.SelectSingleNode('//text[@id="2"]').InnerText = $Text1
-    $ToastImageAndText04XML.SelectSingleNode('//text[@id="3"]').InnerText = $Text2
-    $ToastImageAndText04XML.SelectSingleNode('//image[@id="1"]').SetAttribute('src', $Icon)
-    $ToastImageAndText04XML.SelectSingleNode('//image[@id="1"]').SetAttribute('hint-crop', 'none')
-    $ToastImageAndText04XML.SelectSingleNode('//image[@id="1"]').SetAttribute('placement', 'appLogoOverride')
+        $XmlDocument = New-Object Windows.Data.Xml.Dom.XmlDocument
+        $XmlDocument.LoadXml($xml)
 
-    # Add actions and buttons
-    $Actions = $ToastImageAndText04XML.SelectSingleNode('//toast').AppendChild($ToastImageAndText04XML.CreateElement("actions"))
+        $AppId = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'
 
-    # "Restart now" and "Dismiss" button setup
-    $RestartButton = $ToastImageAndText04XML.CreateElement("action")
-    $RestartButton.SetAttribute('content', 'Restart now')
-    $RestartButton.SetAttribute('activationType', 'protocol')
-    $RestartButton.SetAttribute('arguments', 'RestartNow:')
-    $DismissButton = $ToastImageAndText04XML.CreateElement("action")
-    $DismissButton.SetAttribute('content', 'Dismiss')
-    $DismissButton.SetAttribute('activationType', 'system')
-    $DismissButton.SetAttribute('arguments', 'dismiss')
-
-    # Append buttons
-    $Actions.AppendChild($RestartButton) | Out-Null
-    $Actions.AppendChild($DismissButton) | Out-Null
-
-    # Hero image setup
-    $HeroImage = $ToastImageAndText04XML.CreateElement("image")
-    $HeroImage.SetAttribute('placement', 'hero')
-    $HeroImage.SetAttribute('src', $Hero)
-    $ToastImageAndText04XML.SelectSingleNode('//binding').AppendChild($HeroImage) | Out-Null
-
-    # Switch to ToastGeneric template for hero image
-    $ToastImageAndText04XML.SelectSingleNode('//binding').SetAttribute('template', 'ToastGeneric')
-
-    # App ID retrieval for toast notifier
-    $AppId = (Get-StartApps | Where-Object { $_.Name -eq "Windows PowerShell" } | Select-Object -First 1).AppID
-
-    # Set up the "RestartNow" action
-    $RestartScriptContent = "Shutdown /g /t 300 /f"
-    Set-Action -ActionName "RestartNow" -ScriptContent $RestartScriptContent
-
-    # Show the notification
-    $ToastNotification = [Windows.UI.Notifications.ToastNotification]::new($ToastImageAndText04XML)
-    [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($AppId).Show($ToastNotification)
+        [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($AppId).Show($XmlDocument)
+    }
+    catch {
+        Write-Error "An error occurred while displaying the toast notification: $_"
+    }
+    
 }
 
-function Cleanup-Registry {
+# Function to convert a file to a Base64 string
+function ConvertTo-Base64String {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$FilePath
+    )
+
+    if (Test-Path $FilePath) {
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($FilePath))
+    } else {
+        Write-Error "File not found: $FilePath"
+    }
+}
+
+# Function to save a Base64 string to a file
+function Save-Base64StringToFile {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Base64String,
+        [Parameter(Mandatory=$true)]
+        [string]$OutputPath
+    )
+
+    try {
+        [IO.File]::WriteAllBytes($OutputPath, [Convert]::FromBase64String($Base64String))
+        Write-Output "Image saved successfully to $OutputPath."
+    } catch {
+        Write-Error "Error saving image to $OutputPath. $_"
+    }
+}
+
+# Base64 strings for the images
+$LogoImageBase64 = "<Base64StringForLogoImage>"
+$HeroImageBase64 = "<Base64StringForHeroImage>"
+
+# Setting image variables
+$LogoImagePath = "$env:TEMP\ToastLogoImage.png"
+$HeroImage = "$env:TEMP\ToastHeroImage.gif"
+
+# Save Base64 strings to files
+Save-Base64StringToFile -Base64String $LogoImageBase64 -OutputPath $LogoImagePath
+Save-Base64StringToFile -Base64String $HeroImageBase64 -OutputPath $HeroImage
+
+# Check if the images already exist locally and are valid
+if (-not (Test-Path $LogoImagePath) -or -not (Test-Path $HeroImage)) {
+    # Images not found locally, save them
+    Save-Base64StringToFile -Base64String $LogoImageBase64 -OutputPath $LogoImagePath
+    Save-Base64StringToFile -Base64String $HeroImageBase64 -OutputPath $HeroImage
+} else {
+    # Images exist locally, check if they are outdated
+    $logoLastModified = (Get-Item $LogoImagePath).LastWriteTime
+    $heroLastModified = (Get-Item $HeroImage).LastWriteTime
+    $currentDate = Get-Date
+    $maxAge = New-TimeSpan -Days 1  # Define maximum age for images (e.g., 1 day)
+
+    if (($currentDate - $logoLastModified) -gt $maxAge -or ($currentDate - $heroLastModified) -gt $maxAge) {
+        # Images are outdated, save new versions
+        Save-Base64StringToFile -Base64String $LogoImageBase64 -OutputPath $LogoImagePath
+        Save-Base64StringToFile -Base64String $HeroImageBase64 -OutputPath $HeroImage
+    } else {
+        # Images are up to date, no action needed
+        Write-Output "Images are up to date."
+    }
+}
+
+
+#This function removes registry entries and associated scripts created during the execution of the script
+function Remove-Registry {
     param(
         [string]$ActionName
     )
@@ -181,53 +244,45 @@ function Cleanup-Registry {
     Remove-Item -Path $ScriptPath -Force -ErrorAction SilentlyContinue
 }
 
-# Helper functions from Reboot Reminder script
-Function Check-RebootTime {
+# This function checks the time since the last system reboot
+Function Get-RebootTime {
     $OS = Get-CimInstance -ClassName "Win32_OperatingSystem"
     $LastBoot = $OS.LastBootUpTime
     $Days = ((Get-Date) - $LastBoot).Days
     Return $Days
 }
 
-# Function to enforce a system reboot
-Function Enforce-Reboot {
+# This function enforces a system reboot if the specified time limit for reboot delay is reached
+Function Restart-ComputerForce {
     Shutdown /g /f /t 600 -c "You have reached the limit time for reboot delay. Please save your work and reboot, or your computer will automatically reboot in 10 minutes."
 }
 
-# Function to check if a user session is currently active
-Function Check-UserSession {
-    $SessionInfo = query user 2>&1
-    $activeSessionFound = $false
-    
-    foreach ($line in $SessionInfo) {
-        if ($line -match "\s+Active") {
-            $activeSessionFound = $true
-            break
-        }
-    }
-    
+# This function checks if there is an active user session on the system
+function Get-UserSession {
+    $activeSessionFound = (Get-CimInstance -ClassName Win32_ComputerSystem).UserName -ne $null
     if ($activeSessionFound) {
         Add-Content -Path $LogPath -Value "$(Get-Date) - Active user session detected."
-        return $true
     } else {
         Add-Content -Path $LogPath -Value "$(Get-Date) - No active user sessions found."
-        return $false
     }
+    return $activeSessionFound
 }
 
-# Function to check if its Weekend
-function Is-Weekend {
+
+# This function checks if the current day falls on a weekend.
+function Get-IsWeekend {
     $today = (Get-Date).DayOfWeek
     return $today -ieq 'Saturday' -or $today -ieq 'Sunday'
 }
 
 # Main execution block adapted to use Show-ToastNotification
 Try {
+#This block is the main execution logic of the script, utilizing toast notifications for reboot reminders.
     # Log script start
     Add-Content -Path $LogPath -Value "$(Get-Date) - Script execution started."
 
-    if (-not (Is-Weekend)) {
-        $Days = Check-RebootTime
+    if (-not (Get-IsWeekend)) {
+        $Days = Get-RebootTime
         if ($Days -ge $DaysLimit) {
             $TimeStart = Get-Date
             $TimeEnd = $TimeStart.AddHours($HoursLimit)
@@ -238,27 +293,20 @@ Try {
                 # Check if the current time exceeds the end time and enforce reboot
                 if ($TimeNow -ge $TimeEnd) {
                     Add-Content -Path $LogPath -Value "$(Get-Date) - Time limit for reboot reached. Enforcing reboot now."
-                    Enforce-Reboot
+                    Restart-ComputerForce
                     break # Exit the loop after enforcing reboot
                 }
 
-                # Extract hours and minutes from the time remaining
-                $timeRemaining = $TimeEnd - $TimeNow
-                $hoursRemaining = [Math]::Floor($timeRemaining.TotalHours)
-                $minutesRemaining = $timeRemaining.Minutes
-
                 # Prepare notification parameters
-                $Icon = "C:\TSTFolder\logo.png"
-                $Hero = "C:\TSTFolder\reboot.gif"
                 $Title = "Notice: Pending Reboot Needed"
                 $Text1 = "This computer hasn't rebooted for at least $DaysLimit days."
                 $Text2 = "Please save your work and restart now or dismiss this reminder."
 
                 if ($TimeNow.Hour -ge $WorkStart -and $TimeNow.Hour -lt $WorkEnd) {
                     $loopStartTime = Get-Date
-                    Add-Content -Path $LogPath -Value "$(Get-Date) - Reminder sent: System has not been rebooted for $Days days. Reminder will continue every $ReminderIntervalMinutes minutes until reboot."
-                    Show-ToastNotification -Icon $Icon -Hero $Hero -Title $Title -Text1 $Text1 -Text2 $Text2
-                    
+                    Add-Content -Path $LogPath -Value "$(Get-Date) - Reminder sent: System has not been rebooted for $Days days. Reminder will continue every 30 minutes until reboot."
+                    Show-ToastNotification -Headline $Title -Body $Text1 -LogoPath $LogoImagePath -ImagePath $HeroImage
+                                        
                     $loopEndTime = Get-Date
                     $elapsedTime = $loopEndTime - $loopStartTime
                     $sleepDuration = $ReminderIntervalSeconds - $elapsedTime.TotalSeconds
@@ -282,6 +330,7 @@ Try {
 }
 
 Catch {
+ #This block handles errors that occur during script execution.
     # Error handling remains largely the same
     $ErrorMessage = $_.Exception.Message
     $ErrorTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -292,9 +341,11 @@ Catch {
 }
 
 Finally {
+#This block executes cleanup actions after the main execution block completes or if an error occurs.
     # Clean up any resources if necessary
     Add-Content -Path $LogPath -Value "$(Get-Date) - Clean up resources."
-    #Cleanup-Registry
-    # Cleanup-Registry could be called here based on specific conditions or user actions
+    # Remove-Registry could be called here based on specific conditions or user actions
+    Remove-Registry -ActionName $RestartNow
+    Remove-Registry -ActionName "DismissOrSnooze"
     Write-Warning "The balloon notification variable did not contain a valid NotifyIcon instance."
 }
