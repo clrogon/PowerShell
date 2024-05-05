@@ -32,50 +32,52 @@
     deploying the specified MSI installer to the target remote computers.
 
 .NOTES
-    Author: [Your Name]
-    Version: 1.0
-    Date: [Today's Date or Last Update Date]
     Prerequisites: PowerShell 5.0 or higher, Administrative privileges
-
+.VERSION
+1.0 Initial script
+1.1 Added error handling and logging
+.AUTHOR
+Concept by Cláudio Gonçalves
 #>
 
-# Define global variables
-$msiFilePath = "C:\Users\cagv\Downloads\Teams_windows_x64 (1).msi"
-$installerUrl = "https://statics.teams.cdn.office.net/production-windows-x64/1.6.00.29964/Teams_windows_x64.msi"
-$installerPath = "\\remote\path\installer.msi"
-$logPath = "C:\TSTFolder\Logs\deployment.log"
-$computers = @("Computer1", "Computer2", "Computer3")
+# Define global variables - Use parameters or secure configuration
+param (
+    [string]$msiFilePath = "C:\Temp\installer.msi",
+    [string]$installerUrl = "https://statics.teams.cdn.office.net/production-windows-x64/1.6.00.29964/Teams_windows_x64.msi",
+    [string]$installerPath = "\\$env:COMPUTERNAME\Temp\installer.msi",
+    [string]$logPath = "C:\Logs\deployment.log",
+    [array]$computers = @("Computer1", "Computer2", "Computer3")
+)
 
 # Check PowerShell version
 $minPowershellVersion = 5
 if ($PSVersionTable.PSVersion.Major -lt $minPowershellVersion) {
     Write-Host "This script requires PowerShell version $minPowershellVersion or higher."
-    #exit # Commented out for testing purposes
+    exit 1
 }
 
 # Check for administrative privileges
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-    Write-Information "This script requires administrative privileges."
-    #exit # Commented out for testing purposes
+    Write-Error "This script requires administrative privileges."
+    exit 1
 }
 
 # Check network connectivity
 foreach ($computer in $computers) {
     if (-not (Test-Connection -ComputerName $computer -Count 1 -Quiet)) {
-        Write-Warning "Unable to reach $computer. Please check network connectivity."
-        #exit # Commented out for testing purposes
+        Write-Error "Unable to reach $computer. Please check network connectivity."
+        exit 1
     }
 }
 
 # Validate paths
 if (-not (Test-Path $msiFilePath)) {
-    Write-Warning "MSI file path does not exist: $msiFilePath"
-    #exit # Commented out for testing purposes
+    Write-Error "MSI file path does not exist: $msiFilePath"
+    exit 1
 }
 
-if (-not (Test-Path $logPath)) {
-    Write-Warning "Log file path does not exist: $logPath"
-    #exit # Commented out for testing purposes
+if (-not (Test-Path (Split-Path $logPath -Parent))) {
+    New-Item -ItemType Directory -Path (Split-Path $logPath -Parent) -Force | Out-Null
 }
 
 # Function to extract the product code from an MSI file
@@ -111,14 +113,38 @@ function Log-Information {
 # Function to validate URLs
 function Validate-Url {
     param ([string]$Url)
-    # Add logic to validate the URL (e.g., check format, ensure it uses HTTPS, etc.)
-    return $true # Placeholder, replace with actual validation logic
+    
+    if ([string]::IsNullOrWhiteSpace($Url)) {
+        Write-Warning "URL is empty or null."
+        return $false
+    }
+    
+    # Check if URL uses HTTPS
+    if (-not ($Url -match '^https://')) {
+        Write-Warning "URL must use HTTPS protocol."
+        return $false
+    }
+    
+    # Validate URL format
+    try {
+        $uri = [System.Uri]$Url
+        if (-not $uri.IsWellFormedOriginalString()) {
+            Write-Warning "URL format is invalid."
+            return $false
+        }
+    }
+    catch {
+        Write-Warning "URL validation failed: $_"
+        return $false
+    }
+    
+    return $true
 }
 
 # Enhanced validation of paths and URLs
 if (-not (Validate-Url $installerUrl)) {
-    Write-Warning "Installer URL is not valid or secure: $installerUrl"
-    #exit # Commented out for testing purposes
+    Write-Error "Installer URL is not valid or secure: $installerUrl"
+    exit 1
 }
 
 # Secure Credential Handling
@@ -138,8 +164,8 @@ function Invoke-RemoteOperation {
 # Retrieve the product code of the MSI file
 $productCode = Get-MsiProductCode -Path $msiFilePath
 if (-not $productCode) {
-    Write-Warning "Failed to retrieve the product code from the MSI file."
-    #exit # Commented out for testing purposes
+    Write-Error "Failed to retrieve the product code from the MSI file."
+    exit 1
 }
 
 # Function to prepare a remote machine for deployment
@@ -164,7 +190,9 @@ foreach ($computer in $computers) {
         # Check if the software is already installed
         $isInstalled = Invoke-RemoteOperation -ComputerName $computer -Credential $credential -ScriptBlock {
             param($productCode)
-            Get-WmiObject -Query "SELECT * FROM Win32_Product WHERE IdentifyingNumber = '$productCode'"
+            # Sanitize productCode to prevent WMI injection
+            $sanitizedCode = $productCode -replace '[^\{\}0-9A-Fa-f\-]', ''
+            Get-CimInstance -ClassName Win32_Product -Filter "IdentifyingNumber = '$sanitizedCode'" -ErrorAction SilentlyContinue
         } -ArgumentList $productCode
 
         if (-not $isInstalled) {

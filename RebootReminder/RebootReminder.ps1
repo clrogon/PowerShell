@@ -71,16 +71,43 @@ function Set-Action {
         [string]$ActionName,
         [string]$ScriptContent
     )
-    
-    # Validate the ActionName to prevent issues with file names and registry keys
-    if ($ActionName -notmatch '^[\w\d-]+$') {
-        Write-Error "Invalid ActionName. Only alphanumeric characters and dashes are allowed."
+
+    # Validate ActionName to prevent registry injection and path traversal
+    if ([string]::IsNullOrWhiteSpace($ActionName)) {
+        Write-Error "ActionName cannot be null or empty."
+        return
+    }
+
+    # Only allow alphanumeric characters, no special characters to prevent injection
+    if ($ActionName -notmatch '^[a-zA-Z0-9]+$') {
+        Write-Error "Invalid ActionName. Only alphanumeric characters are allowed."
+        return
+    }
+
+    # Validate ScriptContent to prevent command injection
+    # Block dangerous commands and special characters that could be exploited
+    $dangerousPatterns = @(
+        '&', '|', ';', '`', '$(', '`', '&&', '||', '>', '>>', '<',
+        'Remove-Item', 'del ', 'rm ', 'format ', 'shutdown ',
+        'Invoke-Expression', 'iex ', 'Start-Process.*\.exe'
+    )
+
+    foreach ($pattern in $dangerousPatterns) {
+        if ($ScriptContent -match [regex]::Escape($pattern)) {
+            Write-Error "ScriptContent contains potentially dangerous commands or characters."
+            return
+        }
+    }
+
+    # Limit script content length to prevent overflow attacks
+    if ($ScriptContent.Length -gt 1000) {
+        Write-Error "ScriptContent is too long. Maximum 1000 characters allowed."
         return
     }
 
     Try {
         # Use the environment variable for the temporary directory
-        $ScriptPath = "$env:TEMP\$ActionName.cmd"
+        $ScriptPath = Join-Path $env:TEMP "$ActionName.cmd"
         $LogScriptContent = @"
 echo %DATE% %TIME% - $ActionName button clicked >> "$LogPath"
 $ScriptContent
@@ -236,8 +263,19 @@ function Remove-Registry {
         [string]$ActionName
     )
 
+    # Validate ActionName to prevent registry injection
+    if ([string]::IsNullOrWhiteSpace($ActionName)) {
+        Write-Warning "ActionName cannot be null or empty."
+        return
+    }
+
+    if ($ActionName -notmatch '^[a-zA-Z0-9]+$') {
+        Write-Warning "Invalid ActionName. Only alphanumeric characters are allowed."
+        return
+    }
+
     $MainRegPath = "HKCU:\SOFTWARE\Classes\$ActionName"
-    $ScriptPath = "C:\Windows\Temp\$ActionName.cmd"
+    $ScriptPath = Join-Path $env:TEMP "$ActionName.cmd"
 
     # Remove the registry entries and script
     Remove-Item -Path $MainRegPath -Recurse -Force -ErrorAction SilentlyContinue

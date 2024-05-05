@@ -28,32 +28,85 @@ function Show-Notification {
         # Retrieve the specified template type for the toast notification
         $template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::$TemplateType)
         $xml = [xml]$template.GetXml()
+
+        # Function to sanitize input to prevent XML injection
+        function Sanitize-XmlInput {
+            param([string]$InputString)
+
+            if ([string]::IsNullOrEmpty($InputString)) {
+                return $InputString
+            }
+
+            # Replace XML special characters with their entities
+            $sanitized = $InputString -replace '&', '&amp;'
+            $sanitized = $sanitized -replace '<', '&lt;'
+            $sanitized = $sanitized -replace '>', '&gt;'
+            $sanitized = $sanitized -replace '"', '&quot;'
+            $sanitized = $sanitized -replace "'", '&apos;'
+
+            return $sanitized
+        }
+
+        # Function to validate and sanitize file paths
+        function Test-ValidImagePath {
+            param([string]$Path)
+
+            if ([string]::IsNullOrWhiteSpace($Path)) {
+                return $false
+            }
+
+            # Check for path traversal
+            if ($Path -match '\.\.') {
+                throw "Path contains directory traversal sequences: $Path"
+            }
+
+            # Validate the path
+            if (-not (Test-Path -Path $Path -PathType Leaf -ErrorAction SilentlyContinue)) {
+                throw "The specified image file does not exist: $Path"
+            }
+
+            # Check for valid image extensions
+            $validExtensions = @('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.ico')
+            $extension = [System.IO.Path]::GetExtension($Path).ToLower()
+
+            if ($extension -notin $validExtensions) {
+                throw "Invalid image file extension: $extension"
+            }
+
+            return $true
+        }
     }
 
     process {
         try {
+            # Sanitize input strings to prevent XML injection
+            $safeTitle = Sanitize-XmlInput -InputString $ToastTitle
+            $safeText = Sanitize-XmlInput -InputString $ToastText
+
             # Validate AppLogo if provided
-            if ($AppLogo -and -not (Test-Path -Path $AppLogo -PathType Leaf)) {
-                throw "The specified AppLogo image file does not exist: $AppLogo"
+            if ($AppLogo) {
+                Test-ValidImagePath -Path $AppLogo | Out-Null
             }
 
-            # Validate Buttons parameter type
+            # Validate Buttons parameter type and sanitize values
             if ($Buttons -and $Buttons.GetType() -ne [hashtable]) {
                 throw "The Buttons parameter must be a hashtable."
             }
 
             # Insert title and text into the XML
             $textElements = $xml.GetElementsByTagName("text")
-            $textElements[0].AppendChild($xml.CreateTextNode($ToastTitle)) > $null
+            $textElements[0].AppendChild($xml.CreateTextNode($safeTitle)) > $null
             if ($textElements.Count -gt 1) {
-                $textElements[1].AppendChild($xml.CreateTextNode($ToastText)) > $null
+                $textElements[1].AppendChild($xml.CreateTextNode($safeText)) > $null
             }
 
             # If an AppLogo is provided, incorporate it into the notification
             if ($AppLogo) {
                 $imageElements = $xml.GetElementsByTagName("image")
                 if ($imageElements.Count -gt 0) {
-                    $imageElements[0].SetAttribute("src", $AppLogo)
+                    # Sanitize path for XML attribute
+                    $safeAppLogo = Sanitize-XmlInput -InputString $AppLogo
+                    $imageElements[0].SetAttribute("src", $safeAppLogo)
                 }
             }
 
@@ -71,8 +124,12 @@ function Show-Notification {
                 # Iterate over provided buttons and add them to the notification
                 foreach ($buttonText in $Buttons.Keys) {
                     $button = $xml.CreateElement("action")
-                    $button.SetAttribute("content", $buttonText)
-                    $button.SetAttribute("arguments", $Buttons[$buttonText])
+                    # Sanitize button text and arguments
+                    $safeButtonText = Sanitize-XmlInput -InputString $buttonText
+                    $safeButtonArgs = Sanitize-XmlInput -InputString $Buttons[$buttonText]
+
+                    $button.SetAttribute("content", $safeButtonText)
+                    $button.SetAttribute("arguments", $safeButtonArgs)
                     $button.SetAttribute("activationType", "foreground")
                     $actions.AppendChild($button) > $null
                 }

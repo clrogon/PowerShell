@@ -9,8 +9,13 @@
    .\Measure-TransferSpeed.ps1 -SourceServer "ABC" -DestinationServer "XYZ" -FileSizeMB 100 -Iterations 5 -MeasurementLogFilePath "MeasurementLog.txt" -ExecutionLogFilePath "ExecutionLog.txt"
    Initiates transfer speed measurement between servers "ABC" and "XYZ" using a 100 MB test file for 5 iterations. Logs performance metrics to "MeasurementLog.txt" and script execution details to "ExecutionLog.txt".
 
+.Example
+   $credential = Get-Credential
+   .\Measure-TransferSpeed.ps1 -SourceServer "ABC" -DestinationServer "XYZ" -FileSizeMB 100 -Credential $credential
+   Initiates transfer speed measurement with authentication using provided credentials.
+
 .Inputs
-   Parameters include SourceServer, DestinationServer, FileSizeMB, Iterations, MeasurementLogFilePath, and ExecutionLogFilePath. Additional options for ExportResults and CloudEnabled provide flexibility in result handling and cloud integration.
+   Parameters include SourceServer, DestinationServer, FileSizeMB, Iterations, Credential, MeasurementLogFilePath, and ExecutionLogFilePath. Additional options for ExportResults and CloudEnabled provide flexibility in result handling and cloud integration.
 
 .Outputs
    Detailed logs for performance measurement and script execution, facilitating analysis and troubleshooting of transfer speed issues.
@@ -24,10 +29,14 @@
 
 function Measure-TransferSpeed {
     param (
+        [Parameter(Mandatory=$true)]
         [string]$SourceServer,                 # Source server name or IP address
+        [Parameter(Mandatory=$true)]
         [string]$DestinationServer,           # Destination server name or IP address
+        [Parameter(Mandatory=$true)]
         [int]$FileSizeMB,                     # Size of the file to transfer in megabytes
         [int]$Iterations = 1,                 # Number of iterations to perform the transfer (multiple attempts for accuracy)
+        [PSCredential]$Credential,            # Credential for accessing network resources
         [switch]$CloudEnabled,                # Indicates if cloud features are enabled (not currently used)
         [string]$MeasurementLogFilePath,     # Path to the performance measurement log file
         [string]$ExecutionLogFilePath        # Path to the execution log file
@@ -47,9 +56,36 @@ function Measure-TransferSpeed {
             Add-Content -Path $MeasurementLogFilePath -Value $logMessage
         }
 
+        # Validate server names to prevent injection
+        if ($SourceServer -match '[^a-zA-Z0-9.\-]' -or $DestinationServer -match '[^a-zA-Z0-9.\-]') {
+            throw "Invalid server name detected. Server names should only contain alphanumeric characters, dots, and hyphens."
+        }
+
         # Generate file on source server using New-Item
         $filePath = "\\$SourceServer\file.txt"
-        New-Item -Path $filePath -ItemType "file" -Value " " -Force
+        $destPath = "\\$DestinationServer\file.txt"
+
+        # Create file on source with credential if provided
+        $fileParams = @{
+            Path = $filePath
+            ItemType = "file"
+            Value = " "
+            Force = $true
+            ErrorAction = "Stop"
+        }
+
+        if ($Credential) {
+            if (-not (Test-Path -Path "\\$SourceServer\`$" -Credential $Credential -ErrorAction SilentlyContinue)) {
+                throw "Unable to connect to source server $SourceServer with provided credentials."
+            }
+
+            # Use New-PSDrive for credential-based access
+            $sourceDrive = New-PSDrive -Name "SourceTest" -PSProvider FileSystem -Root "\\$SourceServer\`$" -Credential $Credential -ErrorAction Stop
+            $testFilePath = "SourceTest:\file.txt"
+            New-Item @fileParams | Out-Null
+        } else {
+            New-Item @fileParams | Out-Null
+        }
 
         # Measure transfer performance
         $results = @()
@@ -61,7 +97,16 @@ function Measure-TransferSpeed {
             }
 
             $iterationStartTime = Get-Date
-            Copy-Item -Path $filePath -Destination "\\$DestinationServer\file.txt" -ErrorAction Stop
+
+            if ($Credential) {
+                # Copy using credential via PSDrive
+                $destDrive = New-PSDrive -Name "DestTest" -PSProvider FileSystem -Root "\\$DestinationServer\`$" -Credential $Credential -ErrorAction Stop
+                Copy-Item -Path $testFilePath -Destination "DestTest:\file.txt" -ErrorAction Stop
+                Remove-PSDrive -Name "DestTest" -Force
+            } else {
+                Copy-Item -Path $filePath -Destination $destPath -ErrorAction Stop
+            }
+
             $iterationEndTime = Get-Date
 
             $duration = ($iterationEndTime - $iterationStartTime).TotalSeconds
@@ -107,7 +152,12 @@ function Measure-TransferSpeed {
         }
 
         # Remove temporary file
-        Remove-Item -Path $filePath -Force -ErrorAction SilentlyContinue
+        if ($Credential -and $testFilePath) {
+            Remove-Item -Path $testFilePath -Force -ErrorAction SilentlyContinue
+            Remove-PSDrive -Name "SourceTest" -Force -ErrorAction SilentlyContinue
+        } else {
+            Remove-Item -Path $filePath -Force -ErrorAction SilentlyContinue
+        }
 
         # Return results
         [PSCustomObject]@{

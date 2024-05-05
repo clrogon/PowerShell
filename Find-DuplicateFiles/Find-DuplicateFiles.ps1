@@ -3,11 +3,11 @@
 This script identifies duplicate files in a given directory and performs specified actions on the duplicates.
 
 .DESCRIPTION
-The script uses MD5 hashing by default to identify duplicate files but can use other algorithms as well. It also logs events and can export the list of duplicate files to a CSV file.
+The script uses SHA256 hashing by default to identify duplicates but can use other algorithms as well. It also logs events and can export the list of duplicate files to a CSV file.
 
 .PARAMETERS
 - targetDir: The directory to scan for duplicate files. Default is 'C:\Default\Path'.
-- hashAlgorithm: The hash algorithm to use for identifying duplicates. Default is 'MD5'.
+- hashAlgorithm: The hash algorithm to use for identifying duplicates. Default is 'SHA256'.
 - exportPath: Path to the CSV file where the list of duplicates will be saved. Default is '.\duplicate_files.csv'.
 - logPath: Path to the log file where events will be logged. Default is '.\file_operations.log'.
 - excludeDirs: Array of directories to exclude from scanning. Default is an empty array.
@@ -20,7 +20,7 @@ Find-DuplicateFiles -targetDir 'C:\MyFiles' -hashAlgorithm 'SHA256' -userConfirm
 
 .INPUTS
 - targetDir: String
-- hashAlgorithm: 'MD5', 'SHA1', 'SHA256', etc.
+- hashAlgorithm: 'SHA256', 'SHA1', 'SHA384', 'SHA512', etc.
 - exportPath: String
 - logPath: String
 - excludeDirs: Array of strings
@@ -61,15 +61,59 @@ function Log-Event ($message, $logPath) {
     Add-Content -Path $logPath -Value "[$timestamp] $message"
 }
 
+# Function to validate and sanitize paths to prevent path traversal attacks
+function Test-ValidPath {
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        Write-Error "Path cannot be null or empty."
+        return $false
+    }
+
+    # Check for path traversal attempts
+    if ($Path -match '\.\.') {
+        Write-Error "Path contains directory traversal sequences."
+        return $false
+    }
+
+    # Validate the path format
+    try {
+        $resolvedPath = Resolve-Path -Path $Path -ErrorAction Stop
+        return $true
+    }
+    catch {
+        Write-Error "Invalid path format: $Path"
+        return $false
+    }
+}
+
+# Function to validate file extension
+function Test-ValidExtension {
+    param([string]$Extension)
+
+    if ([string]::IsNullOrWhiteSpace($Extension)) {
+        return $false
+    }
+
+    # Only allow valid file extensions (alphanumeric with dot)
+    if ($Extension -notmatch '^\.[a-zA-Z0-9]+$') {
+        Write-Error "Invalid file extension: $Extension"
+        return $false
+    }
+
+    return $true
+}
+
 # Main Function for Finding Duplicate Files
 function Find-DuplicateFiles {
     [CmdletBinding()]
     param (
         # Define function parameters with default values
         [string]$targetDir = 'C:\Default\Path',
-        [string]$hashAlgorithm = 'MD5',
+        [ValidateSet('SHA256','SHA1','SHA384','SHA512','MD5')]
+        [string]$hashAlgorithm = 'SHA256',
         [string]$exportPath = '.\duplicate_files.csv',
-        [string]$logPath = '.\file_operations.log', # New Parameter for logging
+        [string]$logPath = '.\file_operations.log',
         [array]$excludeDirs = @(),
         [array]$excludeFileTypes = @(),
         [string]$userConfirm = 'None',
@@ -94,6 +138,31 @@ function Find-DuplicateFiles {
     $confirmAll = $false # To track if user has chosen to confirm for all
     $hashTable = @{}
     $duplicates = @()
+
+    # Validate target directory path to prevent path traversal
+    if (-not (Test-ValidPath -Path $targetDir)) {
+        Write-Error "Invalid target directory path: $targetDir"
+        Log-Event "Invalid target directory path: $targetDir" $logPath
+        return
+    }
+
+    # Resolve the path to get absolute path
+    $targetDir = Resolve-Path -Path $targetDir -ErrorAction Stop
+
+    # Validate move path if specified
+    if ($userConfirm -eq 'Move' -and -not (Test-ValidPath -Path $movePath)) {
+        Write-Error "Invalid move path: $movePath"
+        Log-Event "Invalid move path: $movePath" $logPath
+        return
+    }
+
+    # Validate exclude file types
+    foreach ($ext in $excludeFileTypes) {
+        if (-not (Test-ValidExtension -Extension $ext)) {
+            Write-Error "Invalid file extension in exclusion list: $ext"
+            return
+        }
+    }
 
     # Iterate through the files in the target directory
     $files = Get-ChildItem -Path $targetDir -Recurse -File

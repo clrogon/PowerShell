@@ -10,27 +10,35 @@ Add-Type -AssemblyName System.Drawing
 .EXAMPLE
     .\USBManagementTool.ps1
     Launches the GUI, allowing interaction with USB and storage card settings. Displays a toast notification at startup with the current status of USB storage and storage cards.
+.EXAMPLE
+    .\USBManagementTool.ps1 -LogUserActions
+    Launches the GUI and logs user actions including usernames to the event log.
 .INPUTS
     None. All interactions are handled through the GUI.
 .OUTPUTS
     MessageBox outputs for immediate user feedback.
     Windows Event Log entries for auditing and historical tracking.
 .PARAMETERS
-    No parameters. The script's functionality is accessed and controlled through the GUI.
+    -LogUserActions [switch]: Optional parameter to enable logging of usernames in event log entries. Default is false for privacy.
 .NOTES
-    Version: 1.1
+    Version: 1.2
     Author: Claudio Gonçalves
     Last Updated: [Your Last Update Date Here]
     Enhancements include:
     - Toast notifications for real-time status overview at startup.
     - Dynamic status monitoring in the GUI with color-coded feedback.
+    - Optional user action logging for privacy protection.
     This script is suited for both educational and professional contexts, particularly in security-conscious environments requiring regulated access to USB storage devices and storage cards.
 .VERSION
-    1.1 - Added toast notifications for immediate status updates and dynamic status monitoring for USB storage and storage cards.
+    1.2 - Added optional user action logging for privacy protection.
 
 .AUTHOR
     Claudio Gonçalves
 #>
+
+param (
+    [switch]$LogUserActions = $false
+)
 
 # Verify Administrative Privileges
 If (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
@@ -136,9 +144,12 @@ Function Enable-USBStorageAccess {
 
             $message = "USB storage devices have been enabled. Other USB devices like mice or keyboards are not affected."
             [System.Windows.Forms.MessageBox]::Show($message, "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-            
-            # Log the change with before and after states
-            $logMessage = "USB storage devices state changed from $beforeState to $afterState by user $env:USERNAME."
+
+            # Log the change with before and after states (username only if enabled)
+            $logMessage = "USB storage devices state changed from $beforeState to $afterState"
+            if ($LogUserActions) {
+                $logMessage += " by user $env:USERNAME"
+            }
             Write-EventLogEntry -eventSource "USBManagementTool" -logName "Application" -eventID 1002 -entryType "Information" -message $logMessage
         }
     }
@@ -166,7 +177,11 @@ Function Disable-USBStorageAccess {
             Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\USBSTOR" -Name "Start" -Value 4
             Set-Service SCPolicySvc -StartupType Disabled
             Stop-Service SCPolicySvc -ErrorAction SilentlyContinue -Force
-            $message = "USB Ports and Smart Cards have been disabled by user $env:USERNAME."
+            $message = "USB Ports and Smart Cards have been disabled"
+            if ($LogUserActions) {
+                $message += " by user $env:USERNAME"
+            }
+            $message += "."
         }
         
         [System.Windows.Forms.MessageBox]::Show($message, "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
@@ -199,7 +214,11 @@ Function Enable-StorageCard {
             $message = "Storage Card usage is already enabled."
         } else {
             Set-ItemProperty -Path $path -Name $name -Value 1
-            $message = "Storage Card usage has been enabled by user $env:USERNAME."
+            $message = "Storage Card usage has been enabled"
+            if ($LogUserActions) {
+                $message += " by user $env:USERNAME"
+            }
+            $message += "."
         }
         
         [System.Windows.Forms.MessageBox]::Show($message, "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
@@ -232,7 +251,11 @@ Function Disable-StorageCard {
             $message = "Storage Card usage is already disabled."
         } else {
             Set-ItemProperty -Path $path -Name $name -Value 0
-            $message = "Storage Card usage has been disabled by user $env:USERNAME."
+            $message = "Storage Card usage has been disabled"
+            if ($LogUserActions) {
+                $message += " by user $env:USERNAME"
+            }
+            $message += "."
         }
         
         [System.Windows.Forms.MessageBox]::Show($message, "Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
