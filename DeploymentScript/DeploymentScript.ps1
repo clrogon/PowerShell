@@ -32,11 +32,12 @@
     deploying the specified MSI installer to the target remote computers.
 
 .NOTES
-    Author: [Your Name]
-    Version: 1.0
-    Date: [Today's Date or Last Update Date]
     Prerequisites: PowerShell 5.0 or higher, Administrative privileges
-
+.VERSION
+1.0 Initial script
+1.1 Added error handling and logging
+.AUTHOR
+Concept by Cláudio Gonçalves
 #>
 
 # Define global variables
