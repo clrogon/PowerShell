@@ -30,6 +30,7 @@ Concept by Cláudio Gonçalves
 #>
 
 function Find-EmptyFolders {
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory=$true)]
         [ValidateScript({Test-Path $_ -PathType 'Container'})]
