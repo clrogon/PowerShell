@@ -38,6 +38,7 @@ File Name: Find-DuplicateFiles.ps1
 Author: Cláudio Gonçalves
 Version: 2.0
 #>
+
 # Function to Calculate File Hash with exception handling
 function Get-FileHashValue ($filePath, $algorithm = 'MD5') {
     try {
@@ -62,6 +63,7 @@ function Log-Event ($message, $logPath) {
 
 # Main Function for Finding Duplicate Files
 function Find-DuplicateFiles {
+    [CmdletBinding()]
     param (
         # Define function parameters with default values
         [string]$targetDir = 'C:\Default\Path',
