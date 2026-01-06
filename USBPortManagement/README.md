@@ -27,6 +27,28 @@ This tool helps to improve system security by offering a simple and interactive 
 - **Dynamic Status Updates**: View real-time status of USB and storage card access directly in the GUI.
 - **Toast Notifications**: Receive immediate status updates upon script startup via toast notifications.
 - **Event Logging**: Actions and errors are logged in the Windows Event Log for auditing and troubleshooting.
+- **Privacy Protection**: Optional user logging for privacy compliance (username logging disabled by default).
+
+## 🔒 Security & Privacy Features
+
+This tool implements comprehensive security and privacy measures:
+
+- **Optional User Logging**: Username logging is opt-in via `-LogUserActions` parameter
+- **Privacy-First Design**: Default configuration protects user privacy
+- **Audit Trail**: Configurable logging for compliance requirements
+- **Registry Protection**: Proper validation before registry modifications
+- **Administrative Verification**: Mandatory admin privilege checks
+
+### Privacy Controls
+
+By default, the tool does NOT log usernames to protect user privacy. To enable username logging for audit purposes:
+
+```powershell
+.\USBManagementTool.ps1 -LogUserActions
+```
+
+> [!IMPORTANT]
+> **Privacy Notice**: Usernames are only logged when the `-LogUserActions` parameter is explicitly provided. The default configuration prioritizes privacy.
 
 ## Prerequisites
 - Windows 10 or Windows 11
@@ -62,16 +84,17 @@ The tool uses specific Event IDs to categorize different types of actions and er
 
 | Event ID | Description                                                  |
 |----------|--------------------------------------------------------------|
-| 1000     | USB storage devices enabled by the user.                     |
-| 1001     | USB storage devices disabled by the user.                    |
-| 1002     | Storage Card access enabled by the user.                     |
-| 1003     | Storage Card access disabled by the user.                    |
-| 1004     | General information about script operation (e.g., startup).  |
-| 1005     | Errors encountered during enabling/disabling USB storage.    |
-| 1006     | Errors encountered during enabling/disabling Storage Card.   |
-| 1007     | Dynamic status refresh of USB storage devices.               |
-| 1008     | Dynamic status refresh of Storage Card access.               |
-| 1009     | Errors or warnings not covered by other specific Event IDs.  |
+| 1000     | USB storage devices already enabled.                               |
+| 1002     | USB storage devices enabled.                                       |
+| 1003     | USB storage devices and Smart Cards disabled.                        |
+| 1005     | Errors encountered during USB storage operations.                     |
+| 1006     | Errors encountered during Smart Card operations.                        |
+| 1004     | Storage Card usage already enabled.                                  |
+| 1007     | Storage Card usage enabled.                                          |
+| 1008     | Storage Card usage disabled.                                         |
+| 1009     | Errors encountered during Storage Card operations.                       |
+| 2000     | Failed to check USB storage status.                                  |
+| 2001     | Failed to check Storage Card status.                                  |
 
 ### Log Analysis
 

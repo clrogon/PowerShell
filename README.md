@@ -3,7 +3,19 @@
 ## Description
 Welcome to my PowerShell Scripts Repository, a personal collection crafted to streamline and enhance system administration tasks. Each script, born from daily challenges and insights, is tailored to automate or simplify operations, significantly boosting efficiency and reducing errors. This repository is not just a toolset but a reflection of practical, hands-on experience designed to empower fellow administrators with solutions that have been tested in the trenches of IT management.
 
-## Disclaimer
+## 🔒 Security First
+
+This repository prioritizes security and follows industry best practices. All scripts have undergone comprehensive security auditing and remediation.
+
+### Security Features
+- ✅ **Input Validation**: Protection against injection attacks
+- ✅ **Strong Cryptography**: SHA256+ algorithms by default
+- ✅ **Privacy Protection**: Opt-in user logging
+- ✅ **Authentication**: Secure credential management
+- ✅ **HTTPS Enforcement**: Secure network operations
+
+For detailed security information, see [SECURITY.md](SECURITY.md)
+
 > [!IMPORTANT]
 > **Important Notice:** The PowerShell scripts within this repository are provided "as is", with no guarantees. Your use of these scripts is solely at your own discretion and risk. It is strongly recommended to thoroughly test each script in a controlled, non-production environment before incorporating them into your regular workflow. This step ensures compatibility and prevents any unintended consequences in your systems or operations.
 

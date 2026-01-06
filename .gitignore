@@ -1,0 +1,76 @@
+# PowerShell Script Security & Git Ignore File
+# Prevents accidental commits of sensitive information and temporary files
+
+# Sensitive files and credentials
+*.env
+*.key
+*.pem
+*.pfx
+*.p12
+*.jks
+credentials.*
+secrets.*
+passwords.*
+
+# Log files
+*.log
+logs/
+Log*.txt
+
+# Temporary files
+*.tmp
+*.temp
+*~
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# PowerShell specific
+*.ps1xml
+*.psd1
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Backup files
+*.bak
+*.backup
+*_backup*
+*.old
+
+# Build artifacts
+bin/
+obj/
+dist/
+build/
+
+# Test outputs
+TestResults/
+Coverage/
+
+# Package files
+*.nupkg
+*.zip
+*.tar.gz
+*.rar
+
+# OS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+C:\TSTFolder\
+C:\Temp\
+$env:TEMP\

@@ -3,6 +3,25 @@
 ## Description
 `DeploymentScript.ps1` is a versatile PowerShell script designed for automating the deployment of software using MSI files across multiple remote computers. The script facilitates various administrative tasks such as checking system prerequisites, validating network connections, managing credentials securely, and logging the deployment process. It supports custom configurations for targeted deployment, enhancing efficiency and control for system administrators.
 
+## 🔒 Security Features
+
+This script implements comprehensive security measures:
+
+- **WMI Injection Protection**: Sanitized queries using proper parameterization with Get-CimInstance
+- **HTTPS Enforcement**: All download URLs must use HTTPS with format validation
+- **Credential Security**: Secure PSCredential handling for remote operations
+- **Path Validation**: Protection against path traversal attacks
+- **Active Security Checks**: All security validations enabled (no bypass modes)
+- **Admin Verification**: Mandatory administrative privilege checks
+- **Input Validation**: Comprehensive validation of all user inputs
+
+### Security Best Practices Implemented
+
+1. **No Hardcoded Credentials**: All paths configurable via parameters
+2. **Secure Remote Execution**: Proper credential management for remote commands
+3. **URL Validation**: Prevents downloads from untrusted sources
+4. **Error Handling**: Secure failures without exposing sensitive information
+
 ## Usage
 
 The script allows execution with either default parameters or custom options for specific deployment needs.
