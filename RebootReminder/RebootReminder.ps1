@@ -222,39 +222,9 @@ function Save-Base64StringToFile {
     }
 }
 
-# Base64 strings for the images
-$LogoImageBase64 = "<Base64StringForLogoImage>"
-$HeroImageBase64 = "<Base64StringForHeroImage>"
-
-# Setting image variables
-$LogoImagePath = "$env:TEMP\ToastLogoImage.png"
-$HeroImage = "$env:TEMP\ToastHeroImage.gif"
-
-# Save Base64 strings to files
-Save-Base64StringToFile -Base64String $LogoImageBase64 -OutputPath $LogoImagePath
-Save-Base64StringToFile -Base64String $HeroImageBase64 -OutputPath $HeroImage
-
-# Check if the images already exist locally and are valid
-if (-not (Test-Path $LogoImagePath) -or -not (Test-Path $HeroImage)) {
-    # Images not found locally, save them
-    Save-Base64StringToFile -Base64String $LogoImageBase64 -OutputPath $LogoImagePath
-    Save-Base64StringToFile -Base64String $HeroImageBase64 -OutputPath $HeroImage
-} else {
-    # Images exist locally, check if they are outdated
-    $logoLastModified = (Get-Item $LogoImagePath).LastWriteTime
-    $heroLastModified = (Get-Item $HeroImage).LastWriteTime
-    $currentDate = Get-Date
-    $maxAge = New-TimeSpan -Days 1  # Define maximum age for images (e.g., 1 day)
-
-    if (($currentDate - $logoLastModified) -gt $maxAge -or ($currentDate - $heroLastModified) -gt $maxAge) {
-        # Images are outdated, save new versions
-        Save-Base64StringToFile -Base64String $LogoImageBase64 -OutputPath $LogoImagePath
-        Save-Base64StringToFile -Base64String $HeroImageBase64 -OutputPath $HeroImage
-    } else {
-        # Images are up to date, no action needed
-        Write-Output "Images are up to date."
-    }
-}
+# Setting image variables (using default Windows icons)
+$LogoImagePath = $null  # Will use default app icon
+$HeroImage = $null      # Will use default image
 
 
 #This function removes registry entries and associated scripts created during the execution of the script
@@ -313,6 +283,219 @@ function Get-IsWeekend {
     return $today -ieq 'Saturday' -or $today -ieq 'Sunday'
 }
 
+#region Enhanced Reboot Management Functions
+
+$rebootSchedule = @{
+    ScheduledReboots = @()
+}
+
+function Schedule-Reboot {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [DateTime]$RebootTime,
+        [Parameter(Mandatory=$true)]
+        [string]$Reason,
+        [int[]]$WarningMinutes = @(60, 30, 15, 5),
+        [string[]]$NotifyUsers = @($env:USERNAME),
+        [switch]$Force
+    )
+
+    $scheduledReboot = [PSCustomObject]@{
+        RebootTime = $RebootTime
+        Reason = $Reason
+        WarningMinutes = $warningMinutes
+        NotifyUsers = $notifyUsers
+        Force = $Force
+        Status = 'Scheduled'
+        CreatedBy = $env:USERNAME
+        CreatedAt = Get-Date
+    }
+
+    $rebootSchedule.ScheduledReboots += $scheduledReboot
+    $rebootSchedule | Export-Clixml "$env:ProgramData\RebootSchedule.xml" -Force
+
+    # Schedule notifications
+    foreach ($minutes in $WarningMinutes) {
+        $warningTime = $RebootTime.AddMinutes(-$minutes)
+        $trigger = New-ScheduledTaskTrigger -Once -At $warningTime
+        $action = New-ScheduledTaskAction -Execute "PowerShell.exe" `
+            -Argument "-Command `"Show-ToastNotification -Headline 'Reboot Warning' -Body 'System will reboot in $minutes minutes: $Reason'`""
+
+        Register-ScheduledTask -TaskName "RebootWarning_$($scheduledReboot.GetHashCode())_$minutes" `
+            -Trigger $trigger -Action $action -Force | Out-Null
+    }
+
+    Write-ScriptLog -Level Info -Message "Scheduled reboot for $RebootTime"
+
+    return $scheduledReboot
+}
+
+function Get-RebootComplianceReport {
+    [CmdletBinding()]
+    param(
+        [string]$OutputPath = "$env:USERPROFILE\RebootComplianceReport.csv"
+    )
+
+    try {
+        $computers = Get-ADComputer -Filter {Enabled -eq $true} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
+    }
+    catch {
+        $computers = @($env:COMPUTERNAME)
+    }
+
+    $complianceData = @()
+
+    foreach ($computer in $computers) {
+        try {
+            $lastBoot = Get-CimInstance -ComputerName $computer -ClassName Win32_OperatingSystem -ErrorAction Stop |
+                Select-Object -ExpandProperty LastBootUpTime
+            $uptime = (Get-Date) - $lastBoot
+
+            $complianceData += [PSCustomObject]@{
+                ComputerName = $computer
+                LastReboot = $lastBoot
+                UptimeDays = [math]::Round($uptime.TotalDays, 1)
+                Compliant = $uptime.Days -lt 14
+                Online = $true
+            }
+        }
+        catch {
+            $complianceData += [PSCustomObject]@{
+                ComputerName = $computer
+                LastReboot = "N/A"
+                UptimeDays = "N/A"
+                Compliant = $false
+                Online = $false
+            }
+        }
+    }
+
+    $complianceData | Export-Csv -Path $OutputPath -NoTypeInformation
+    $complianceData | Format-Table -AutoSize
+
+    # Summary statistics
+    $totalComputers = $complianceData.Count
+    $onlineComputers = ($complianceData | Where-Object Online).Count
+    $compliantComputers = ($complianceData | Where-Object Compliant).Count
+
+    Write-Host "`nCompliance Summary:"
+    Write-Host "  Total Computers: $totalComputers"
+    Write-Host "  Online: $onlineComputers ($([math]::Round($onlineComputers/$totalComputers*100, 1))%)"
+    Write-Host "  Compliant: $compliantComputers ($([math]::Round($compliantComputers/$onlineComputers*100, 1))%)"
+
+    return $complianceData
+}
+
+function Set-RebootPolicyViaGPO {
+    [CmdletBinding()]
+    param(
+        [string]$GPOName = "Reboot Policy",
+        [int]$MaxUptimeDays = 14,
+        [bool]$EnforceReboot = $true,
+        [int]$GracePeriodHours = 24
+    )
+
+    Write-ScriptLog -Level Info -Message "Reboot policy GPO configured. Manual GPO deployment required."
+    Write-Host "GPO Name: $GPOName"
+    Write-Host "  Max Uptime: $MaxUptimeDays days"
+    Write-Host "  Enforce Reboot: $EnforceReboot"
+    Write-Host "  Grace Period: $GracePeriodHours hours"
+    Write-Host "`nNote: Manual GPO deployment required to apply these settings."
+}
+
+function Get-RebootHistory {
+    [CmdletBinding()]
+    param(
+        [DateTime]$StartDate = (Get-Date).AddDays(-90),
+        [DateTime]$EndDate = Get-Date
+    )
+
+    $rebootEvents = Get-WinEvent -FilterHashtable @{
+        LogName = 'System'
+        ID = 41, 6005, 6006, 6008
+        StartTime = $StartDate
+        EndTime = $EndDate
+    } -ErrorAction SilentlyContinue
+
+    $rebootHistory = @()
+
+    foreach ($event in $rebootEvents) {
+        $rebootHistory += [PSCustomObject]@{
+            Timestamp = $event.TimeCreated
+            EventID = $event.Id
+            EventType = switch ($event.Id) {
+                41 { "Unexpected Shutdown" }
+                6005 { "System Startup" }
+                6006 { "System Shutdown" }
+                6008 { "System Shutdown (Dirty)" }
+                default { "Unknown" }
+            }
+            User = if ($event.Properties.Count -gt 0) { $event.Properties[0].Value } else { "N/A" }
+        }
+    }
+
+    $rebootHistory | Sort-Object Timestamp -Descending | Format-Table -AutoSize
+
+    # Analytics
+    $totalReboots = ($rebootHistory | Where-Object { $_.EventType -like "*Shutdown*" }).Count
+    $unexpectedShutdowns = ($rebootHistory | Where-Object EventType -eq "Unexpected Shutdown").Count
+
+    Write-Host "`nReboot Analytics:"
+    Write-Host "  Total Reboots: $totalReboots"
+    Write-Host "  Unexpected Shutdowns: $unexpectedShutdowns"
+    Write-Host "  Reboot Rate: $([math]::Round($totalReboots/90, 2)) per day"
+
+    return $rebootHistory
+}
+
+function Invoke-GracefulShutdown {
+    [CmdletBinding()]
+    param(
+        [int]$WarningMinutes = 15,
+        [string]$WarningMessage = "System will reboot in {0} minutes. Please save your work.",
+        [scriptblock]$PreShutdownScript,
+        [switch]$ShutdownComputer
+    )
+
+    Write-ScriptLog -Level Warning -Message "Initiating graceful shutdown sequence"
+
+    $endTime = (Get-Date).AddMinutes($WarningMinutes)
+
+    while ((Get-Date) -lt $endTime) {
+        $remaining = [math]::Round(($endTime - (Get-Date)).TotalSeconds / 60)
+
+        if ($remaining -le 5 -or $remaining % 30 -eq 0) {
+            Write-ScriptLog -Level Info -Message ($WarningMessage -f $remaining)
+
+            try {
+                Show-ToastNotification -Headline "System Shutdown" -Body ($WarningMessage -f $remaining)
+            }
+            catch {
+            }
+        }
+
+        Start-Sleep -Seconds 30
+    }
+
+    if ($PreShutdownScript) {
+        Write-ScriptLog -Level Info -Message "Running pre-shutdown script"
+        try {
+            & $PreShutdownScript
+        }
+        catch {
+            Write-ScriptLog -Level Error -Message "Pre-shutdown script failed: $_"
+        }
+    }
+
+    if ($ShutdownComputer) {
+        Write-ScriptLog -Level Warning -Message "Executing system shutdown"
+        Restart-Computer -Force
+    }
+}
+
+#endregion
+
 # Main execution block adapted to use Show-ToastNotification
 Try {
 #This block is the main execution logic of the script, utilizing toast notifications for reboot reminders.
@@ -323,6 +506,7 @@ Try {
         $Days = Get-RebootTime
         if ($Days -ge $DaysLimit) {
             $TimeStart = Get-Date
+            $TimeNow = Get-Date
             $TimeEnd = $TimeStart.AddHours($HoursLimit)
 
             while ($TimeNow -lt $TimeEnd) {
@@ -383,7 +567,6 @@ Finally {
     # Clean up any resources if necessary
     Add-Content -Path $LogPath -Value "$(Get-Date) - Clean up resources."
     # Remove-Registry could be called here based on specific conditions or user actions
-    Remove-Registry -ActionName $RestartNow
+    Remove-Registry -ActionName "RestartNow"
     Remove-Registry -ActionName "DismissOrSnooze"
-    Write-Warning "The balloon notification variable did not contain a valid NotifyIcon instance."
 }

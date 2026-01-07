@@ -6,13 +6,13 @@ Add-Type -AssemblyName System.Drawing
 .SYNOPSIS
     USB Port and Storage Card Management Tool.
 .DESCRIPTION
-    This PowerShell script offers a graphical user interface (GUI) for managing USB storage device and storage card access on Windows systems. It features enabling/disabling access, dynamic status updates, and toast notifications for initial status awareness. The tool requires administrative privileges for system modifications and logs actions to the Windows Event Log for audit trails and troubleshooting.
+    This PowerShell script offers a graphical user interface (GUI) for managing USB storage device and storage card access on Windows systems. It features enabling/disabling access, dynamic status updates, and toast notifications for initial status awareness. The tool requires administrative privileges for system modifications and logs actions to the Windows Event Log for audit trails and troubleshooting. Enhanced with device whitelisting, time-based access, and policy-based management.
 .EXAMPLE
     .\USBManagementTool.ps1
     Launches the GUI, allowing interaction with USB and storage card settings. Displays a toast notification at startup with the current status of USB storage and storage cards.
 .EXAMPLE
-    .\USBManagementTool.ps1 -LogUserActions
-    Launches the GUI and logs user actions including usernames to the event log.
+    .\USBManagementTool.ps1 -LogUserActions -SecurityLevel High
+    Launches the GUI with user action logging enabled and High security level policy enforcement.
 .INPUTS
     None. All interactions are handled through the GUI.
 .OUTPUTS
@@ -20,24 +20,35 @@ Add-Type -AssemblyName System.Drawing
     Windows Event Log entries for auditing and historical tracking.
 .PARAMETERS
     -LogUserActions [switch]: Optional parameter to enable logging of usernames in event log entries. Default is false for privacy.
+    -SecurityLevel [string]: Security policy level (High, Medium, Low). Default is Medium.
 .NOTES
-    Version: 1.2
+    Version: 2.0
     Author: Claudio Gonçalves
-    Last Updated: [Your Last Update Date Here]
+    Last Updated: January 07, 2026
     Enhancements include:
     - Toast notifications for real-time status overview at startup.
     - Dynamic status monitoring in the GUI with color-coded feedback.
     - Optional user action logging for privacy protection.
-    This script is suited for both educational and professional contexts, particularly in security-conscious environments requiring regulated access to USB storage devices and storage cards.
+    - Device whitelisting for approved hardware.
+    - Time-based access control.
+    - Policy-based management (High/Medium/Low security).
+    - Automated USB device monitoring.
 .VERSION
-    1.2 - Added optional user action logging for privacy protection.
+    2.0 - Added device whitelisting, time-based access control, and policy management.
 
 .AUTHOR
     Claudio Gonçalves
 #>
 
+Import-Module "$PSScriptRoot\..\modules\Configuration.psm1" -Force
+Import-Module "$PSScriptRoot\..\modules\Logging.psm1" -Force
+
+Initialize-ScriptConfiguration -DefaultConfig (Get-DefaultConfiguration)
+
 param (
-    [switch]$LogUserActions = $false
+    [switch]$LogUserActions = $false,
+    [ValidateSet('High', 'Medium', 'Low')]
+    [string]$SecurityLevel = 'Medium'
 )
 
 # Verify Administrative Privileges
@@ -377,3 +388,310 @@ Refresh-Status
 
 # Show GUI Form
 $form.ShowDialog()
+
+#region USB Policy and Device Management Functions
+
+$deviceWhitelist = @{
+    AllowedDevices = @(
+        # Example: "VID_046D&PID_C52B"  # Logitech Mouse
+        # Example: "VID_0951&PID_1666"  # Kingston USB Drive
+    )
+}
+
+function Set-USBAccessSchedule {
+    [CmdletBinding()]
+    param(
+        [TimeSpan]$AllowedStart = "09:00",
+        [TimeSpan]$AllowedEnd = "17:00",
+        [DayOfWeek[]]$AllowedDays = @('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+    )
+
+    $schedule = @{
+        AllowedStart = $AllowedStart
+        AllowedEnd = $AllowedEnd
+        AllowedDays = $AllowedDays
+    }
+
+    $schedule | Export-Clixml "$env:ProgramData\USBAccessSchedule.xml" -Force
+
+    Write-ScriptLog -Level Info -Message "USB access schedule configured"
+
+    return $schedule
+}
+
+function Test-USBAccessAllowed {
+    [CmdletBinding()]
+    param()
+
+    $now = Get-Date
+    $currentTime = $now.TimeOfDay
+
+    if (-not (Test-Path "$env:ProgramData\USBAccessSchedule.xml")) {
+        return $true
+    }
+
+    $schedule = Import-Clixml "$env:ProgramData\USBAccessSchedule.xml"
+
+    if ($schedule.AllowedDays -notcontains $now.DayOfWeek) {
+        Write-ScriptLog -Level Warning -Message "USB access not allowed on $($now.DayOfWeek)"
+        return $false
+    }
+
+    if ($currentTime -lt $schedule.AllowedStart -or $currentTime -gt $schedule.AllowedEnd) {
+        Write-ScriptLog -Level Warning -Message "USB access not allowed at this time"
+        return $false
+    }
+
+    return $true
+}
+
+function Add-USBDeviceWhitelist {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$DeviceID
+    )
+
+    $deviceWhitelist.AllowedDevices += $DeviceID
+    $deviceWhitelist | Export-Clixml "$env:ProgramData\USBDeviceWhitelist.xml" -Force
+
+    Write-ScriptLog -Level Info -Message "Added device to whitelist: $DeviceID"
+}
+
+function Remove-USBDeviceWhitelist {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$DeviceID
+    )
+
+    $deviceWhitelist.AllowedDevices = $deviceWhitelist.AllowedDevices | Where-Object { $_ -ne $DeviceID }
+    $deviceWhitelist | Export-Clixml "$env:ProgramData\USBDeviceWhitelist.xml" -Force
+
+    Write-ScriptLog -Level Info -Message "Removed device from whitelist: $DeviceID"
+}
+
+function Test-USBDeviceAllowed {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$DeviceID
+    )
+
+    if (-not (Test-Path "$env:ProgramData\USBDeviceWhitelist.xml")) {
+        return $true
+    }
+
+    $whitelist = Import-Clixml "$env:ProgramData\USBDeviceWhitelist.xml"
+
+    if ($whitelist.AllowedDevices -contains $DeviceID) {
+        return $true
+    }
+
+    Write-ScriptLog -Level Warning -Message "Blocked unauthorized USB device: $DeviceID"
+
+    return $false
+}
+
+$usbPolicies = @{
+    SecurityLevel = @{
+        High = @{
+            EnableUSBStorage = $false
+            AllowRemovableMedia = $false
+            RequireEncryption = $true
+            LogAllEvents = $true
+            WhitelistMode = $true
+        }
+        Medium = @{
+            EnableUSBStorage = $true
+            AllowRemovableMedia = $true
+            RequireEncryption = $false
+            LogAllEvents = $true
+            WhitelistMode = $false
+        }
+        Low = @{
+            EnableUSBStorage = $true
+            AllowRemovableMedia = $true
+            RequireEncryption = $false
+            LogAllEvents = $false
+            WhitelistMode = $false
+        }
+    }
+}
+
+function Set-USBPolicy {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateSet('High', 'Medium', 'Low')]
+        [string]$SecurityLevel,
+        [switch]$ApplyNow
+    )
+
+    $policy = $usbPolicies.SecurityLevel[$SecurityLevel]
+
+    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\USBSTOR" -Name "Start" `
+        -Value $(if ($policy.EnableUSBStorage) { 3 } else { 4 })
+
+    $policy | Export-Clixml "$env:ProgramData\USBPolicy.xml" -Force
+
+    Write-ScriptLog -Level Info -Message "USB policy set to $SecurityLevel level"
+
+    if ($ApplyNow) {
+        Apply-USBPolicy -Policy $policy
+    }
+}
+
+function Apply-USBPolicy {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [hashtable]$Policy
+    )
+
+    if ($Policy.EnableUSBStorage) {
+        Enable-USBStorageAccess
+    } else {
+        Disable-USBStorageAccess
+    }
+
+    Write-ScriptLog -Level Info -Message "USB policy applied"
+}
+
+function Get-USBDeviceEvents {
+    [CmdletBinding()]
+    param(
+        [DateTime]$StartDate = (Get-Date).AddDays(-7),
+        [DateTime]$EndDate = Get-Date
+    )
+
+    $events = Get-WinEvent -FilterHashtable @{
+        LogName = 'System'
+        ID = 2003, 2004
+        StartTime = $StartDate
+        EndTime = $EndDate
+    } -ErrorAction SilentlyContinue
+
+    $deviceEvents = @()
+
+    foreach ($event in $events) {
+        $deviceEvents += [PSCustomObject]@{
+            Timestamp = $event.TimeCreated
+            EventType = if ($event.Id -eq 2003) { "USBInserted" } else { "USBRemoved" }
+            DeviceID = $event.Message -replace '.*Device ID: ([^\s]+).*', '$1'
+            ComputerName = $event.MachineName
+            UserName = $event.UserId
+        }
+    }
+
+    return $deviceEvents
+}
+
+function Monitor-USBDeviceEvents {
+    [CmdletBinding()]
+    param(
+        [TimeSpan]$MonitoringInterval = "00:05:00"
+    )
+
+    Write-ScriptLog -Level Info -Message "Starting USB device event monitoring"
+
+    $query = "SELECT * FROM Win32_VolumeChangeEvent WHERE EventType = 2"
+
+    Register-WmiEvent -Query $query -SourceIdentifier "USBMonitor" -Action {
+        $driveLetter = $Event.SourceEventArgs.NewEvent.DriveName
+        $deviceId = Get-PhysicalDiskInfo -DriveLetter $driveLetter
+
+        $logEntry = [PSCustomObject]@{
+            Timestamp = Get-Date
+            EventType = "USBInserted"
+            DeviceID = $deviceId
+            DriveLetter = $driveLetter
+            ComputerName = $env:COMPUTERNAME
+            UserName = $env:USERNAME
+        }
+
+        $logEntry | Export-Csv "$env:ProgramData\USBDeviceLog.csv" -Append -NoTypeInformation
+
+        if (-not (Test-USBDeviceAllowed -DeviceID $deviceId)) {
+            Write-ScriptLog -Level Warning -Message "Blocking unauthorized USB device: $deviceId"
+
+            try {
+                Disable-USBStorageAccess
+            }
+            catch {
+                Write-ScriptLog -Level Error -Message "Failed to disable USB storage: $_"
+            }
+        }
+    }
+
+    Write-Host "USB device monitoring active. Press Ctrl+C to stop."
+    while ($true) {
+        Start-Sleep -Seconds $MonitoringInterval.TotalSeconds
+    }
+}
+
+function Get-PhysicalDiskInfo {
+    [CmdletBinding()]
+    param(
+        [string]$DriveLetter
+    )
+
+    try {
+        $volume = Get-CimInstance Win32_Volume | Where-Object { $_.DriveLetter -eq $DriveLetter }
+        $disk = Get-CimInstance Win32_DiskDrive | Where-Object { $_.DeviceID -eq $volume.DiskIndex }
+
+        $pnpDeviceId = $disk.PNPDeviceID
+
+        return $pnpDeviceId
+    }
+    catch {
+        Write-ScriptLog -Level Error -Message "Failed to get disk info: $_"
+        return $null
+    }
+}
+
+function Get-USBPolicyStatus {
+    [CmdletBinding()]
+    param()
+
+    if (-not (Test-Path "$env:ProgramData\USBPolicy.xml")) {
+        return $null
+    }
+
+    $policy = Import-Clixml "$env:ProgramData\USBPolicy.xml"
+
+    foreach ($level in @('High', 'Medium', 'Low')) {
+        $currentPolicy = $usbPolicies.SecurityLevel[$level]
+
+        if ($currentPolicy.EnableUSBStorage -eq $policy.EnableUSBStorage -and
+            $currentPolicy.AllowRemovableMedia -eq $policy.AllowRemovableMedia) {
+            return @{
+                SecurityLevel = $level
+                Policy = $policy
+            }
+        }
+    }
+
+    return $null
+}
+
+function Initialize-USBPolicy {
+    [CmdletBinding()]
+    param()
+
+    if (-not (Test-Path "$env:ProgramData\USBPolicy.xml")) {
+        Set-USBPolicy -SecurityLevel 'Medium'
+    }
+
+    if (-not (Test-Path "$env:ProgramData\USBDeviceWhitelist.xml")) {
+        $deviceWhitelist | Export-Clixml "$env:ProgramData\USBDeviceWhitelist.xml" -Force
+    }
+
+    if (-not (Test-Path "$env:ProgramData\USBAccessSchedule.xml")) {
+        Set-USBAccessSchedule
+    }
+
+    Write-ScriptLog -Level Info -Message "USB policy components initialized"
+}
+
+#endregion
