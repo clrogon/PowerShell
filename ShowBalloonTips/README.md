@@ -1,4 +1,7 @@
 # Show Balloon Tip Script
+## Deprecation Notice
+This script is deprecated. Balloon tip notifications are not recommended on modern Windows versions. Migration path: use Show-Notification.ps1 for modern toast notifications with templates, scheduling, and user preferences.
+See Show-Notification/README.md for details and usage.
 ## Description
 ShowBalloonTip.ps1 is a fun PowerShell script that displays a balloon tip in the system tray. Balloon tips are a great way to display non-intrusive notifications to users. This script can be used to learn how to create and use balloon tips in your own scripts.
 

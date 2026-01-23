@@ -29,6 +29,8 @@
 
 Function Global:Show-BalloonTip
 {
+    # Deprecation notice: migrate to Show-Notification.ps1 for modern toast notifications
+    Write-Warning "Show-BalloonTip is deprecated and will be removed in a future release. Use Show-Notification.ps1 for modern Windows toast notifications instead."
     [CmdletBinding()]
     [Alias()]
     [OutputType([int])]

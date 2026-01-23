@@ -1,0 +1,52 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # PowerShell is available on Windows runners by default
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -Scope CurrentUser -Force -SkipPublisherCheck
+          Import-Module Pester
+
+      - name: Run unit tests (Pester)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Import-Module .\modules\Configuration.psm1
+          Import-Module .\modules\Logging.psm1
+          Import-Module .\modules\ErrorHandling.psm1
+          if (Test-Path .\tests) { Invoke-Pester -Path .\tests } else { Invoke-Pester -Path .\tests -Quiet }
+
+      - name: Install PSScriptAnalyzer & run (optional security checks)
+        shell: pwsh
+        run: |
+          try {
+            Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force -SkipPublisherCheck
+            Import-Module PSScriptAnalyzer
+            if (Test-Path .\PSScriptAnalyzerSettings.psd1) {
+              Invoke-ScriptAnalyzer -Path . -Recurse -Settings .\PSScriptAnalyzerSettings.psd1
+            } else {
+              Invoke-ScriptAnalyzer -Path . -Recurse
+            }
+          } catch { Write-Warning "PSScriptAnalyzer not available: $_" }
+
+      - name: Sign scripts (optional)
+        shell: pwsh
+        env:
+          CODE_SIGN_THUMBPRINT: ${{ secrets.CODE_SIGN_THUMBPRINT }}
+        run: |
+          if (Test-Path ./signing/Sign-Scripts.ps1) {
+            try {
+              & (Resolve-Path ./signing/Sign-Scripts.ps1) -Paths (Get-ChildItem -Path . -Recurse -Include '*.ps1','*.psm1' -File | Select-Object -Expand FullName) -Thumbprint $env:CODE_SIGN_THUMBPRINT
+            } catch { Write-Warning "Signing step encountered an issue: $_" }
+          }

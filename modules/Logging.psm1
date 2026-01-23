@@ -82,14 +82,14 @@ function Write-ScriptLog {
     }
     
     if (-not $NoConsole) {
-        $color = switch ($Level) {
-            'Error' { 'Red' }
-            'Warning' { 'Yellow' }
-            'Debug' { 'Gray' }
-            'Verbose' { 'Cyan' }
-            default { 'White' }
+        # Use Information stream for console output to enable better integration with PS analyzers
+        $infoLine = "[$timestamp] [$Level] [$Component] $Message"
+        try {
+            Write-Information -Message $infoLine
+        } catch {
+            # Fallback for environments without Write-Information (older PS versions)
+            Write-Host $infoLine
         }
-        Write-Host "[$timestamp] [$Level] [$Component] $Message" -ForegroundColor $color
     }
     
     if (-not $NoFile -and $script:LogPath) {
